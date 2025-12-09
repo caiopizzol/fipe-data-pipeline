@@ -1,4 +1,4 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 import { db } from "./connection.js";
 import {
   referenceTables,
@@ -6,6 +6,7 @@ import {
   models,
   modelYears,
   prices,
+  type Segment,
 } from "./schema.js";
 
 // Reference Tables
@@ -65,14 +66,14 @@ export async function upsertModel(brandId: number, fipeCode: string, name: strin
     .from(models)
     .where(and(eq(models.brandId, brandId), eq(models.fipeCode, fipeCode)));
 
-  if (existing) return existing;
+  if (existing) return { model: existing, isNew: false };
 
   const [inserted] = await db
     .insert(models)
     .values({ brandId, fipeCode, name })
     .returning();
 
-  return inserted;
+  return { model: inserted, isNew: true };
 }
 
 // Model Years
@@ -152,4 +153,43 @@ export async function getStats() {
     prices: pricesCount?.count ?? 0,
     references: refsCount?.count ?? 0,
   };
+}
+
+// Segment Classification
+export async function getModelsWithoutSegment() {
+  return db
+    .select({
+      id: models.id,
+      brandName: brands.name,
+      modelName: models.name,
+    })
+    .from(models)
+    .innerJoin(brands, eq(models.brandId, brands.id))
+    .where(isNull(models.segment));
+}
+
+export async function updateModelSegment(
+  modelId: number,
+  segment: Segment,
+  source: "ai" | "manual"
+) {
+  await db
+    .update(models)
+    .set({ segment, segmentSource: source })
+    .where(eq(models.id, modelId));
+}
+
+export async function getModelById(modelId: number) {
+  const [model] = await db
+    .select({
+      id: models.id,
+      segment: models.segment,
+      brandName: brands.name,
+      modelName: models.name,
+    })
+    .from(models)
+    .innerJoin(brands, eq(models.brandId, brands.id))
+    .where(eq(models.id, modelId));
+
+  return model;
 }

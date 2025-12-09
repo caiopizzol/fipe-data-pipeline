@@ -23,6 +23,21 @@ export const brands = pgTable("brands", {
   name: varchar("name", { length: 100 }).notNull(),
 });
 
+export const SEGMENTS = [
+  "Buggy",
+  "Caminhão Leve",
+  "Conversível",
+  "Coupé",
+  "Hatch",
+  "Perua",
+  "Pick-up",
+  "Sedã",
+  "SUV",
+  "Van/Utilitário",
+] as const;
+
+export type Segment = (typeof SEGMENTS)[number];
+
 export const models = pgTable(
   "models",
   {
@@ -32,6 +47,8 @@ export const models = pgTable(
       .notNull(),
     fipeCode: varchar("fipe_code", { length: 20 }).notNull(),
     name: varchar("name", { length: 200 }).notNull(),
+    segment: varchar("segment", { length: 20 }),
+    segmentSource: varchar("segment_source", { length: 10 }),
   },
   (table) => [unique().on(table.brandId, table.fipeCode)]
 );

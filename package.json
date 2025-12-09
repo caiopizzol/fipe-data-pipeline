@@ -5,6 +5,7 @@
   "scripts": {
     "crawl": "tsx src/index.ts crawl",
     "status": "tsx src/index.ts status",
+    "classify": "tsx src/index.ts classify",
     "db:push": "drizzle-kit push",
     "db:shell": "docker exec -it fipe-postgres psql -U postgres -d fipe",
     "build": "tsc"
@@ -12,6 +13,7 @@
   "license": "MIT",
   "description": "Data pipeline for FIPE vehicle pricing data",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
     "commander": "^14.0.2",
     "dotenv": "^17.2.3",
     "drizzle-orm": "^0.45.0",

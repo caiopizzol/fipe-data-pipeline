@@ -1,5 +1,6 @@
 import { fipeClient } from "../fipe/client.js";
 import * as repo from "../db/repository.js";
+import { classifySingleModel } from "../classifier/segment-classifier.js";
 
 function parseYearValue(value: string): { year: number; fuelCode: number } {
   // Format: "2020-1" (year-fuelCode)
@@ -45,6 +46,7 @@ function parseReferenceMonth(mes: string): { month: number; year: number } {
 interface CrawlOptions {
   referenceCode?: number;
   brandCode?: string;
+  classify?: boolean;
   onProgress?: (message: string) => void;
 }
 
@@ -93,11 +95,20 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
         const models = modelsResponse.Modelos;
 
         for (const model of models) {
-          const modelRecord = await repo.upsertModel(
+          const { model: modelRecord, isNew } = await repo.upsertModel(
             brandRecord.id,
             String(model.Value),
             model.Label
           );
+
+          // Classify new models (if enabled)
+          if (isNew && options.classify) {
+            const segment = await classifySingleModel(brand.Label, model.Label);
+            if (segment) {
+              await repo.updateModelSegment(modelRecord.id, segment, "ai");
+              log(`    Classified ${model.Label} as ${segment}`);
+            }
+          }
 
           try {
             const years = await fipeClient.getYears(

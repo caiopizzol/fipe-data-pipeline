@@ -7,6 +7,7 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   RATE_LIMIT_MS: z.coerce.number().default(200),
   MAX_RETRIES: z.coerce.number().default(3),
+  ANTHROPIC_API_KEY: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
