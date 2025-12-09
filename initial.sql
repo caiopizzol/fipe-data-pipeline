@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS models (
   brand_id INTEGER NOT NULL REFERENCES brands(id),
   fipe_code VARCHAR(20) NOT NULL,
   name VARCHAR(200) NOT NULL,
+  segment VARCHAR(20),
+  segment_source VARCHAR(10),
   UNIQUE(brand_id, fipe_code)
 );
 
