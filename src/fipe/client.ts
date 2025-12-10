@@ -50,8 +50,12 @@ export class FipeClient {
 
   private recordSuccess(): void {
     this.successCount++;
-    if (this.successCount >= 10 && this.currentThrottleMs > env.RATE_LIMIT_MS) {
-      const newThrottle = Math.max(this.currentThrottleMs - 50, env.RATE_LIMIT_MS);
+    // After 5 consecutive successes, halve the distance to baseline
+    if (this.successCount >= 5 && this.currentThrottleMs > env.RATE_LIMIT_MS) {
+      const newThrottle = Math.max(
+        Math.floor((this.currentThrottleMs + env.RATE_LIMIT_MS) / 2),
+        env.RATE_LIMIT_MS,
+      );
       if (newThrottle !== this.currentThrottleMs) {
         console.log(
           `Throttle recovery: decreasing from ${this.currentThrottleMs}ms to ${newThrottle}ms`,
