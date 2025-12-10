@@ -30,8 +30,11 @@ export class FipeClient {
     this.lastRequestTime = Date.now();
   }
 
-  private calculateBackoff(attempt: number): number {
-    return 1000 * Math.pow(2, attempt); // 1s, 2s, 4s, 8s...
+  private calculateBackoff(attempt: number, is429 = false): number {
+    // For 429s, use longer base delay (5s, 10s, 20s, 40s...)
+    // For other errors, use standard delay (1s, 2s, 4s, 8s...)
+    const baseDelay = is429 ? 5000 : 1000;
+    return baseDelay * Math.pow(2, attempt);
   }
 
   private increaseThrottle(): void {
@@ -79,17 +82,21 @@ export class FipeClient {
       if (response.status === 429) {
         this.increaseThrottle();
 
-        if (retries > 0) {
-          // Check for Retry-After header
-          const retryAfter = response.headers.get('Retry-After');
-          const waitTime = retryAfter
-            ? parseInt(retryAfter, 10) * 1000
-            : this.calculateBackoff(attempt);
+        // Check for Retry-After header
+        const retryAfter = response.headers.get('Retry-After');
+        const waitTime = retryAfter
+          ? parseInt(retryAfter, 10) * 1000
+          : this.calculateBackoff(attempt, true);
 
+        if (retries > 0) {
           console.log(`429 received, waiting ${waitTime}ms before retry (${retries} retries left)`);
           await sleep(waitTime);
           return this.request(endpoint, body, retries - 1, attempt + 1);
         }
+
+        // Exhausted retries - wait before throwing to give API time to recover
+        console.log(`429 exhausted retries, cooling down for ${waitTime}ms before failing`);
+        await sleep(waitTime);
       } else if (retries > 0) {
         const waitTime = this.calculateBackoff(attempt);
         console.log(
