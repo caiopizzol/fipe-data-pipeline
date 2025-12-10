@@ -7,12 +7,31 @@ import { closeConnection } from './db/connection.js';
 
 const program = new Command();
 
+/**
+ * Parse a flexible number input (single value, range, or list)
+ * Examples: "2023" -> [2023], "2020-2023" -> [2020,2021,2022,2023], "1,3,6" -> [1,3,6]
+ */
+function parseNumberList(value: string): number[] {
+  const results: number[] = [];
+  for (const part of value.split(',')) {
+    if (part.includes('-')) {
+      const [start, end] = part.split('-').map((v) => parseInt(v.trim(), 10));
+      for (let i = start; i <= end; i++) {
+        results.push(i);
+      }
+    } else {
+      results.push(parseInt(part.trim(), 10));
+    }
+  }
+  return [...new Set(results)].sort((a, b) => a - b);
+}
+
 program
   .command('crawl')
   .description('Crawl FIPE data and store in database')
   .option('-r, --reference <code>', 'Specific reference table code')
-  .option('-y, --year <year>', 'Year to crawl (default: current year)')
-  .option('-M, --month <month>', 'Specific month to crawl (1-12)')
+  .option('-y, --year <year>', 'Year(s) to crawl (e.g., 2023, 2020-2023, or 2020,2022,2023)')
+  .option('-M, --month <month>', 'Month(s) to crawl (e.g., 6, 1-6, or 1,3,6)')
   .option('-b, --brand <code>', 'Specific brand code')
   .option('-m, --model <code>', 'Specific model code (requires --brand)')
   .option('-c, --classify', 'Classify new models by segment using AI')
@@ -20,8 +39,8 @@ program
     try {
       await crawl({
         referenceCode: options.reference ? parseInt(options.reference, 10) : undefined,
-        year: options.year ? parseInt(options.year, 10) : undefined,
-        month: options.month ? parseInt(options.month, 10) : undefined,
+        years: options.year ? parseNumberList(options.year) : undefined,
+        months: options.month ? parseNumberList(options.month) : undefined,
         brandCode: options.brand,
         modelCode: options.model,
         classify: options.classify,

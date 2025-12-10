@@ -39,35 +39,21 @@ pnpm crawl
 ## Uso
 
 ```bash
-# Crawl completo do ano atual
-pnpm crawl
+pnpm crawl                                    # Ano atual, todos os meses
+pnpm crawl -- --year 2024                     # Ano específico
+pnpm crawl -- --year 2020-2024                # Range de anos
+pnpm crawl -- --year 2020,2022,2024           # Anos específicos
+pnpm crawl -- --month 1-6                     # Range de meses
+pnpm crawl -- --year 2023-2024 --month 1,6,12 # Combinar filtros
+pnpm crawl -- --brand 59                      # Marca específica (59 = VW)
+pnpm crawl -- --brand 59 --model 5940         # Modelo específico
+pnpm crawl -- --reference 328                 # Tabela de referência específica
+pnpm crawl -- --classify                      # Classificar modelos novos via AI
+ALLOWED_BRANDS=21,22,23 pnpm crawl            # Limitar marcas via env
 
-# Filtrar por referência específica
-pnpm crawl -- --reference 328
-
-# Filtrar por ano e mês
-pnpm crawl -- --year 2024 --month 6
-
-# Filtrar por marca (59 = Volkswagen)
-pnpm crawl -- --brand 59
-
-# Filtrar por modelo específico (requer --brand)
-pnpm crawl -- --brand 59 --model 5940
-
-# Classificar modelos durante o crawl
-pnpm crawl -- --classify
-
-# Ver estatísticas do banco
-pnpm status
-
-# Classificar todos os modelos sem segmento
-pnpm classify
-
-# Dry-run da classificação
-pnpm classify -- --dry-run
-
-# Filtrar por lista de marcas (via env)
-ALLOWED_BRANDS=21,22,23 pnpm crawl  # Fiat, Ford, Chevrolet
+pnpm status                                   # Estatísticas do banco
+pnpm classify                                 # Classificar modelos sem segmento
+pnpm classify -- --dry-run                    # Preview da classificação
 ```
 
 ## Docker
