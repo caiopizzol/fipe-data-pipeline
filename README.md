@@ -1,51 +1,125 @@
 # FIPE Data Pipeline
 
-Coleta dados de preços de veículos da Tabela FIPE oficial e armazena em PostgreSQL para análise histórica.
+[![GitHub Release](https://img.shields.io/github/v/release/caiopizzol/fipe-data-pipeline)](https://github.com/caiopizzol/fipe-data-pipeline/releases)
 
-## Configuração
+Crawler em TypeScript que coleta dados históricos de preços de veículos da Tabela FIPE e armazena em PostgreSQL.
+
+## O Problema
+
+A FIPE publica preços de veículos todo mês desde 2001, mas:
+
+- **Não existe API oficial** - o site é só consulta manual
+- **5 níveis de hierarquia** - mês de referência → marca → modelo → ano/combustível → preço
+- **Escala massiva** - 320+ tabelas de referência, 90+ marcas, milhares de modelos
+- **Alternativas pagas** - existem, mas sem garantia de confiabilidade dos dados
+
+## Features
+
+- **Throttling inteligente** - 200ms entre requests + retry com backoff exponencial
+- **Fallback hierárquico** - se um modelo falha, continua com os outros
+- **Upserts idempotentes** - pode rodar de novo sem duplicar dados
+- **Classificação por segmento** - categoriza modelos (SUV, Sedã, Hatch, etc.) usando Claude
+
+## Quick Start
 
 ```bash
-cp .env.example .env
-npm install
+# Sobe o banco
 docker compose up -d
-npm run db:push
+
+# Instala dependências
+pnpm install
+
+# Aplica schema
+pnpm db:push
+
+# Crawla dados de 2025
+pnpm crawl
 ```
 
 ## Uso
 
 ```bash
-npm run crawl                                    # Coleta todos os dados de 2025
-npm run crawl -- --reference 328                 # Mês específico
-npm run crawl -- --reference 328 --brand 59      # Marca específica (59 = VW)
-npm run crawl -- --classify                      # Classifica novos modelos por segmento (requer ANTHROPIC_API_KEY)
-npm run status                                   # Estatísticas do banco
-npm run db:shell                                 # Terminal PostgreSQL
+# Crawl completo do ano atual
+pnpm crawl
+
+# Filtrar por referência específica
+pnpm crawl -- --reference 328
+
+# Filtrar por marca (59 = Volkswagen)
+pnpm crawl -- --brand 59
+
+# Filtrar por modelo específico (requer --brand)
+pnpm crawl -- --brand 59 --model 5940
+
+# Classificar modelos durante o crawl
+pnpm crawl -- --classify
+
+# Ver estatísticas do banco
+pnpm status
+
+# Classificar todos os modelos sem segmento
+pnpm classify
+
+# Dry-run da classificação
+pnpm classify -- --dry-run
 ```
 
-### Classificação de Segmentos (Opcional)
+## Arquitetura
 
-Classifica modelos por tipo de carroceria (SUV, Sedã, Hatch, etc.) usando IA.
-
-```bash
-npm run classify                                 # Classifica todos os modelos sem segmento
-npm run classify -- --dry-run                    # Mostra o que seria classificado
-npm run classify -- --model 123                  # Classifica modelo específico por ID
+```
+src/
+├── fipe/
+│   ├── client.ts          # HTTP client com throttling
+│   └── schemas.ts         # Validação Zod
+├── crawler/
+│   └── processor.ts       # Orquestração do crawl
+├── db/
+│   ├── schema.ts          # Drizzle ORM
+│   └── repository.ts      # Upserts
+└── classifier/
+    └── segment-classifier.ts  # Claude API
 ```
 
-Requer `ANTHROPIC_API_KEY` no `.env`.
+## Stack
 
-## Fonte de Dados
+- Node.js 22 + TypeScript
+- Drizzle ORM
+- PostgreSQL 16
+- Zod (validação runtime)
 
-Dados oficiais da FIPE em `veiculos.fipe.org.br`. Que incluem:
+## Schema
+
+```mermaid
+flowchart LR
+    reference_tables --> prices
+    brands --> models --> model_years --> prices
+```
+
+**Exemplo:**
+
+| reference_tables | brands     | models   | model_years | prices    |
+| ---------------- | ---------- | -------- | ----------- | --------- |
+| Jan/2025 (#328)  | Volkswagen | Gol 1.0  | 2020 Flex   | R$ 45.000 |
+|                  |            |          | 2021 Flex   | R$ 48.000 |
+|                  |            | Polo 1.6 | 2022 Flex   | R$ 72.000 |
+| Fev/2025 (#329)  | Volkswagen | Gol 1.0  | 2020 Flex   | R$ 44.500 |
+
+Cada preço vincula um veículo (modelo + ano + combustível) a um mês de referência.
+
+Schema SQL completo em [`initial.sql`](./initial.sql).
+
+## Dados
+
+Fonte oficial: `veiculos.fipe.org.br`
 
 - Tabelas de referência (snapshots mensais desde 2001)
 - Marcas, modelos, anos
 - Preços por tipo de combustível
 
-## Schema
+## Demo
 
-```
-reference_tables → brands → models → model_years → prices
-```
+Veja os dados em ação: [fipe.chat](https://fipe.chat)
 
-Cada registro de preço vincula um veículo (modelo + ano + combustível) a um mês de referência.
+## Licença
+
+MIT
