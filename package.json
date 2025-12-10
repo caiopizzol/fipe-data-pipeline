@@ -8,7 +8,13 @@
     "classify": "tsx src/index.ts classify",
     "db:push": "drizzle-kit push",
     "db:shell": "docker exec -it fipe-postgres psql -U postgres -d fipe",
-    "build": "tsc"
+    "build": "tsc",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "prepare": "husky"
   },
   "license": "MIT",
   "description": "Data pipeline for FIPE vehicle pricing data",
@@ -22,8 +28,16 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@semantic-release/git": "^10.0.1",
     "@types/node": "^24.10.2",
     "drizzle-kit": "^0.31.8",
-    "typescript": "^5.9.3"
+    "eslint": "^9.39.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.7.4",
+    "semantic-release": "^25.0.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.49.0"
   }
 }

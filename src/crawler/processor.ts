@@ -1,10 +1,10 @@
-import { fipeClient } from "../fipe/client.js";
-import * as repo from "../db/repository.js";
-import { classifySingleModel } from "../classifier/segment-classifier.js";
+import { fipeClient } from '../fipe/client.js';
+import * as repo from '../db/repository.js';
+import { classifySingleModel } from '../classifier/segment-classifier.js';
 
 function parseYearValue(value: string): { year: number; fuelCode: number } {
   // Format: "2020-1" (year-fuelCode)
-  const [yearStr, fuelCodeStr] = value.split("-");
+  const [yearStr, fuelCodeStr] = value.split('-');
   return {
     year: parseInt(yearStr, 10),
     fuelCode: parseInt(fuelCodeStr, 10),
@@ -13,10 +13,7 @@ function parseYearValue(value: string): { year: number; fuelCode: number } {
 
 function parsePrice(valor: string): string {
   // "R$ 4.147,00" -> "4147.00"
-  return valor
-    .replace("R$ ", "")
-    .replace(/\./g, "")
-    .replace(",", ".");
+  return valor.replace('R$ ', '').replace(/\./g, '').replace(',', '.');
 }
 
 function parseReferenceMonth(mes: string): { month: number; year: number } {
@@ -36,7 +33,7 @@ function parseReferenceMonth(mes: string): { month: number; year: number } {
     dezembro: 12,
   };
 
-  const [monthName, yearStr] = mes.trim().toLowerCase().split("/");
+  const [monthName, yearStr] = mes.trim().toLowerCase().split('/');
   return {
     month: months[monthName] || 0,
     year: parseInt(yearStr, 10),
@@ -56,7 +53,7 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
   const log = options.onProgress ?? console.log;
 
   // Get reference tables (2025 only, or specific one)
-  log("Fetching reference tables...");
+  log('Fetching reference tables...');
   const allRefs = await fipeClient.getReferenceTables();
 
   // Filter to specific reference, year, or default to current year
@@ -66,7 +63,7 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
     : allRefs.filter((r) => r.Mes.includes(String(targetYear)));
 
   if (refs.length === 0) {
-    log("No reference tables found to process");
+    log('No reference tables found to process');
     return;
   }
 
@@ -103,24 +100,20 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
           const { model: modelRecord, isNew } = await repo.upsertModel(
             brandRecord.id,
             String(model.Value),
-            model.Label
+            model.Label,
           );
 
           // Classify new models (if enabled)
           if (isNew && options.classify) {
             const segment = await classifySingleModel(brand.Label, model.Label);
             if (segment) {
-              await repo.updateModelSegment(modelRecord.id, segment, "ai");
+              await repo.updateModelSegment(modelRecord.id, segment, 'ai');
               log(`    Classified ${model.Label} as ${segment}`);
             }
           }
 
           try {
-            const years = await fipeClient.getYears(
-              ref.Codigo,
-              brand.Value,
-              String(model.Value)
-            );
+            const years = await fipeClient.getYears(ref.Codigo, brand.Value, String(model.Value));
 
             for (const yearData of years) {
               const { year: modelYear, fuelCode } = parseYearValue(yearData.Value);
@@ -139,22 +132,22 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
                   modelRecord.id,
                   modelYear,
                   fuelCode,
-                  yearData.Label
+                  yearData.Label,
                 );
 
                 await repo.upsertPrice(
                   modelYearRecord.id,
                   refRecord.id,
                   price.CodigoFipe,
-                  parsePrice(price.Valor)
+                  parsePrice(price.Valor),
                 );
 
                 totalPrices++;
-              } catch (err) {
+              } catch {
                 // Price fetch failed - skip this year (don't create model_year)
               }
             }
-          } catch (err) {
+          } catch {
             // Years fetch failed - skip this model
           }
         }
@@ -174,7 +167,7 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
 
 export async function status(): Promise<void> {
   const stats = await repo.getStats();
-  console.log("\nDatabase status:");
+  console.log('\nDatabase status:');
   console.log(`  References: ${stats.references}`);
   console.log(`  Brands: ${stats.brands}`);
   console.log(`  Models: ${stats.models}`);
