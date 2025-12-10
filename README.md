@@ -45,6 +45,9 @@ pnpm crawl
 # Filtrar por referência específica
 pnpm crawl -- --reference 328
 
+# Filtrar por ano e mês
+pnpm crawl -- --year 2024 --month 6
+
 # Filtrar por marca (59 = Volkswagen)
 pnpm crawl -- --brand 59
 
@@ -65,6 +68,22 @@ pnpm classify -- --dry-run
 
 # Filtrar por lista de marcas (via env)
 ALLOWED_BRANDS=21,22,23 pnpm crawl  # Fiat, Ford, Chevrolet
+```
+
+## Docker
+
+```bash
+# Build
+docker build -t fipe-crawler .
+
+# Ver ajuda
+docker run --rm fipe-crawler
+
+# Crawl com filtros
+docker run --rm --env-file .env fipe-crawler crawl --brand 25 --year 2024 --month 6
+
+# Crawl completo do ano atual
+docker run --rm --env-file .env fipe-crawler crawl
 ```
 
 ## Arquitetura

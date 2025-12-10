@@ -49,6 +49,7 @@ function parseReferenceMonth(mes: string): { month: number; year: number } {
 interface CrawlOptions {
   referenceCode?: number;
   year?: number;
+  month?: number;
   brandCode?: string;
   modelCode?: string;
   classify?: boolean;
@@ -62,11 +63,19 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
   log('Fetching reference tables...');
   const allRefs = await fipeClient.getReferenceTables();
 
-  // Filter to specific reference, year, or default to current year
+  // Filter to specific reference, year/month, or default to current year
   const targetYear = options.year ?? new Date().getFullYear();
-  const refs = options.referenceCode
+  let refs = options.referenceCode
     ? allRefs.filter((r) => r.Codigo === options.referenceCode)
     : allRefs.filter((r) => r.Mes.includes(String(targetYear)));
+
+  // Further filter by month if specified
+  if (options.month && !options.referenceCode) {
+    refs = refs.filter((r) => {
+      const { month } = parseReferenceMonth(r.Mes);
+      return month === options.month;
+    });
+  }
 
   if (refs.length === 0) {
     log('No reference tables found to process');

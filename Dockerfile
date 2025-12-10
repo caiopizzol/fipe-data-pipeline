@@ -5,4 +5,5 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile --prod --ignore-scripts
 COPY src ./src
 COPY tsconfig.json ./
-CMD ["pnpm", "tsx", "src/index.ts", "crawl"]
+ENTRYPOINT ["pnpm", "tsx", "src/index.ts"]
+CMD ["--help"]

@@ -12,6 +12,7 @@ program
   .description('Crawl FIPE data and store in database')
   .option('-r, --reference <code>', 'Specific reference table code')
   .option('-y, --year <year>', 'Year to crawl (default: current year)')
+  .option('-M, --month <month>', 'Specific month to crawl (1-12)')
   .option('-b, --brand <code>', 'Specific brand code')
   .option('-m, --model <code>', 'Specific model code (requires --brand)')
   .option('-c, --classify', 'Classify new models by segment using AI')
@@ -20,6 +21,7 @@ program
       await crawl({
         referenceCode: options.reference ? parseInt(options.reference, 10) : undefined,
         year: options.year ? parseInt(options.year, 10) : undefined,
+        month: options.month ? parseInt(options.month, 10) : undefined,
         brandCode: options.brand,
         modelCode: options.model,
         classify: options.classify,
