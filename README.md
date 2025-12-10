@@ -47,6 +47,7 @@ pnpm crawl -- --month 1-6                     # Range de meses
 pnpm crawl -- --year 2023-2024 --month 1,6,12 # Combinar filtros
 pnpm crawl -- --brand 59                      # Marca específica (59 = VW)
 pnpm crawl -- --brand 59 --model 5940         # Modelo específico
+pnpm crawl -- --brand 59 --model 5940,5941    # Múltiplos modelos
 pnpm crawl -- --reference 328                 # Tabela de referência específica
 pnpm crawl -- --classify                      # Classificar modelos novos via AI
 ALLOWED_BRANDS=21,22,23 pnpm crawl            # Limitar marcas via env

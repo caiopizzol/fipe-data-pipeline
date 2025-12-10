@@ -52,7 +52,7 @@ interface CrawlOptions {
   years?: number[];
   months?: number[];
   brandCode?: string;
-  modelCode?: string;
+  modelCodes?: string[];
   classify?: boolean;
   onProgress?: (message: string) => void;
 }
@@ -110,8 +110,8 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
 
       try {
         const modelsResponse = await fipeClient.getModels(ref.Codigo, brand.Value);
-        const models = options.modelCode
-          ? modelsResponse.Modelos.filter((m) => String(m.Value) === options.modelCode)
+        const models = options.modelCodes
+          ? modelsResponse.Modelos.filter((m) => options.modelCodes!.includes(String(m.Value)))
           : modelsResponse.Modelos;
 
         log(`  Processing brand: ${brand.Label} (${models.length} models)`);
