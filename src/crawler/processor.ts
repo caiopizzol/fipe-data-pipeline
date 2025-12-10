@@ -45,7 +45,9 @@ function parseReferenceMonth(mes: string): { month: number; year: number } {
 
 interface CrawlOptions {
   referenceCode?: number;
+  year?: number;
   brandCode?: string;
+  modelCode?: string;
   classify?: boolean;
   onProgress?: (message: string) => void;
 }
@@ -57,10 +59,11 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
   log("Fetching reference tables...");
   const allRefs = await fipeClient.getReferenceTables();
 
-  // Filter to 2025 or specific reference
+  // Filter to specific reference, year, or default to current year
+  const targetYear = options.year ?? new Date().getFullYear();
   const refs = options.referenceCode
     ? allRefs.filter((r) => r.Codigo === options.referenceCode)
-    : allRefs.filter((r) => r.Mes.includes("2025"));
+    : allRefs.filter((r) => r.Mes.includes(String(targetYear)));
 
   if (refs.length === 0) {
     log("No reference tables found to process");
@@ -92,7 +95,9 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
 
       try {
         const modelsResponse = await fipeClient.getModels(ref.Codigo, brand.Value);
-        const models = modelsResponse.Modelos;
+        const models = options.modelCode
+          ? modelsResponse.Modelos.filter((m) => String(m.Value) === options.modelCode)
+          : modelsResponse.Modelos;
 
         for (const model of models) {
           const { model: modelRecord, isNew } = await repo.upsertModel(
@@ -120,13 +125,6 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
             for (const yearData of years) {
               const { year: modelYear, fuelCode } = parseYearValue(yearData.Value);
 
-              const modelYearRecord = await repo.upsertModelYear(
-                modelRecord.id,
-                modelYear,
-                fuelCode,
-                yearData.Label
-              );
-
               try {
                 const price = await fipeClient.getPrice({
                   referenceCode: ref.Codigo,
@@ -135,6 +133,14 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
                   year: String(modelYear),
                   fuelCode,
                 });
+
+                // Only create model_year if we got a valid price
+                const modelYearRecord = await repo.upsertModelYear(
+                  modelRecord.id,
+                  modelYear,
+                  fuelCode,
+                  yearData.Label
+                );
 
                 await repo.upsertPrice(
                   modelYearRecord.id,
@@ -145,7 +151,7 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
 
                 totalPrices++;
               } catch (err) {
-                // Price fetch failed - skip this year
+                // Price fetch failed - skip this year (don't create model_year)
               }
             }
           } catch (err) {
