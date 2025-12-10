@@ -1,6 +1,6 @@
 {
   "name": "fipe-data-pipeline",
-  "version": "1.5.4",
+  "version": "1.6.0",
   "type": "module",
   "scripts": {
     "crawl": "tsx src/index.ts crawl",
