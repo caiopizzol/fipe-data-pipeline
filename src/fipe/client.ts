@@ -1,4 +1,4 @@
-import { env } from "../config.js";
+import { env } from '../config.js';
 import {
   referenceTablesSchema,
   brandsSchema,
@@ -6,17 +6,10 @@ import {
   yearsSchema,
   priceSchema,
   fipeErrorSchema,
-} from "./schemas.js";
-import type {
-  ReferenceTable,
-  Brand,
-  ModelsResponse,
-  Year,
-  Price,
-  PriceParams,
-} from "./types.js";
+} from './schemas.js';
+import type { ReferenceTable, Brand, ModelsResponse, Year, Price, PriceParams } from './types.js';
 
-const BASE_URL = "https://veiculos.fipe.org.br/api/veiculos";
+const BASE_URL = 'https://veiculos.fipe.org.br/api/veiculos';
 const VEHICLE_TYPE_CAR = 1;
 
 async function sleep(ms: number): Promise<void> {
@@ -38,14 +31,14 @@ export class FipeClient {
   private async request<T>(
     endpoint: string,
     body: Record<string, unknown>,
-    retries = env.MAX_RETRIES
+    retries = env.MAX_RETRIES,
   ): Promise<T> {
     await this.throttle();
 
     const response = await fetch(`${BASE_URL}/${endpoint}`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json"
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
     });
@@ -70,17 +63,17 @@ export class FipeClient {
   }
 
   async getReferenceTables(): Promise<ReferenceTable[]> {
-    const data = await this.request<unknown>("ConsultarTabelaDeReferencia", {});
+    const data = await this.request<unknown>('ConsultarTabelaDeReferencia', {});
     return referenceTablesSchema.parse(data);
   }
 
   async getReferenceTables2025(): Promise<ReferenceTable[]> {
     const all = await this.getReferenceTables();
-    return all.filter((ref) => ref.Mes.includes("2025"));
+    return all.filter((ref) => ref.Mes.includes('2025'));
   }
 
   async getBrands(referenceCode: number): Promise<Brand[]> {
-    const data = await this.request<unknown>("ConsultarMarcas", {
+    const data = await this.request<unknown>('ConsultarMarcas', {
       codigoTipoVeiculo: VEHICLE_TYPE_CAR,
       codigoTabelaReferencia: referenceCode,
     });
@@ -88,7 +81,7 @@ export class FipeClient {
   }
 
   async getModels(referenceCode: number, brandCode: string): Promise<ModelsResponse> {
-    const data = await this.request<unknown>("ConsultarModelos", {
+    const data = await this.request<unknown>('ConsultarModelos', {
       codigoTipoVeiculo: VEHICLE_TYPE_CAR,
       codigoTabelaReferencia: referenceCode,
       codigoMarca: brandCode,
@@ -96,12 +89,8 @@ export class FipeClient {
     return modelsResponseSchema.parse(data);
   }
 
-  async getYears(
-    referenceCode: number,
-    brandCode: string,
-    modelCode: string
-  ): Promise<Year[]> {
-    const data = await this.request<unknown>("ConsultarAnoModelo", {
+  async getYears(referenceCode: number, brandCode: string, modelCode: string): Promise<Year[]> {
+    const data = await this.request<unknown>('ConsultarAnoModelo', {
       codigoTipoVeiculo: VEHICLE_TYPE_CAR,
       codigoTabelaReferencia: referenceCode,
       codigoMarca: brandCode,
@@ -111,14 +100,14 @@ export class FipeClient {
   }
 
   async getPrice(params: PriceParams): Promise<Price> {
-    const data = await this.request<unknown>("ConsultarValorComTodosParametros", {
+    const data = await this.request<unknown>('ConsultarValorComTodosParametros', {
       codigoTipoVeiculo: VEHICLE_TYPE_CAR,
       codigoTabelaReferencia: params.referenceCode,
       codigoMarca: params.brandCode,
       codigoModelo: params.modelCode,
       anoModelo: params.year,
       codigoTipoCombustivel: params.fuelCode,
-      tipoConsulta: "tradicional",
+      tipoConsulta: 'tradicional',
     });
     return priceSchema.parse(data);
   }

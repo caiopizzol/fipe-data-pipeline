@@ -1,27 +1,14 @@
-import { eq, and, isNull } from "drizzle-orm";
-import { db } from "./connection.js";
-import {
-  referenceTables,
-  brands,
-  models,
-  modelYears,
-  prices,
-  type Segment,
-} from "./schema.js";
+import { eq, and, isNull } from 'drizzle-orm';
+import { db } from './connection.js';
+import { referenceTables, brands, models, modelYears, prices, type Segment } from './schema.js';
 
 // Reference Tables
 export async function upsertReferenceTable(code: number, month: number, year: number) {
-  const [existing] = await db
-    .select()
-    .from(referenceTables)
-    .where(eq(referenceTables.code, code));
+  const [existing] = await db.select().from(referenceTables).where(eq(referenceTables.code, code));
 
   if (existing) return existing;
 
-  const [inserted] = await db
-    .insert(referenceTables)
-    .values({ code, month, year })
-    .returning();
+  const [inserted] = await db.insert(referenceTables).values({ code, month, year }).returning();
 
   return inserted;
 }
@@ -44,17 +31,11 @@ export async function getCrawledReferences(): Promise<number[]> {
 
 // Brands
 export async function upsertBrand(fipeCode: string, name: string) {
-  const [existing] = await db
-    .select()
-    .from(brands)
-    .where(eq(brands.fipeCode, fipeCode));
+  const [existing] = await db.select().from(brands).where(eq(brands.fipeCode, fipeCode));
 
   if (existing) return existing;
 
-  const [inserted] = await db
-    .insert(brands)
-    .values({ fipeCode, name })
-    .returning();
+  const [inserted] = await db.insert(brands).values({ fipeCode, name }).returning();
 
   return inserted;
 }
@@ -68,10 +49,7 @@ export async function upsertModel(brandId: number, fipeCode: string, name: strin
 
   if (existing) return { model: existing, isNew: false };
 
-  const [inserted] = await db
-    .insert(models)
-    .values({ brandId, fipeCode, name })
-    .returning();
+  const [inserted] = await db.insert(models).values({ brandId, fipeCode, name }).returning();
 
   return { model: inserted, isNew: true };
 }
@@ -81,7 +59,7 @@ export async function upsertModelYear(
   modelId: number,
   year: number,
   fuelCode: number,
-  fuelName: string
+  fuelName: string,
 ) {
   const [existing] = await db
     .select()
@@ -90,8 +68,8 @@ export async function upsertModelYear(
       and(
         eq(modelYears.modelId, modelId),
         eq(modelYears.year, year),
-        eq(modelYears.fuelCode, fuelCode)
-      )
+        eq(modelYears.fuelCode, fuelCode),
+      ),
     );
 
   if (existing) return existing;
@@ -109,17 +87,12 @@ export async function upsertPrice(
   modelYearId: number,
   referenceTableId: number,
   fipeCode: string,
-  priceBrl: string
+  priceBrl: string,
 ) {
   const [existing] = await db
     .select()
     .from(prices)
-    .where(
-      and(
-        eq(prices.modelYearId, modelYearId),
-        eq(prices.referenceTableId, referenceTableId)
-      )
-    );
+    .where(and(eq(prices.modelYearId, modelYearId), eq(prices.referenceTableId, referenceTableId)));
 
   if (existing) {
     // Update if price changed
@@ -171,12 +144,9 @@ export async function getModelsWithoutSegment() {
 export async function updateModelSegment(
   modelId: number,
   segment: Segment,
-  source: "ai" | "manual"
+  source: 'ai' | 'manual',
 ) {
-  await db
-    .update(models)
-    .set({ segment, segmentSource: source })
-    .where(eq(models.id, modelId));
+  await db.update(models).set({ segment, segmentSource: source }).where(eq(models.id, modelId));
 }
 
 export async function getModelById(modelId: number) {
