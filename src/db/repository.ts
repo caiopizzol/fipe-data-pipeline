@@ -39,27 +39,7 @@ export async function getCrawledReferences(): Promise<number[]> {
   return rows.map((r) => r.code);
 }
 
-export async function isBrandsCrawled(referenceId: number): Promise<boolean> {
-  const [ref] = await db
-    .select({ brandsCrawledAt: referenceTables.brandsCrawledAt })
-    .from(referenceTables)
-    .where(eq(referenceTables.id, referenceId));
-  return !!ref?.brandsCrawledAt;
-}
-
-export async function markBrandsCrawled(referenceId: number) {
-  await db
-    .update(referenceTables)
-    .set({ brandsCrawledAt: new Date() })
-    .where(eq(referenceTables.id, referenceId));
-}
-
 export async function clearCrawlStatus(referenceId: number) {
-  await db
-    .update(referenceTables)
-    .set({ brandsCrawledAt: null })
-    .where(eq(referenceTables.id, referenceId));
-
   await db.delete(referenceModelYears).where(eq(referenceModelYears.referenceTableId, referenceId));
   await db.delete(referenceModels).where(eq(referenceModels.referenceTableId, referenceId));
   await db.delete(referenceBrands).where(eq(referenceBrands.referenceTableId, referenceId));

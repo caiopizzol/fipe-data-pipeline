@@ -3,8 +3,7 @@ CREATE TABLE IF NOT EXISTS reference_tables (
   code INTEGER UNIQUE NOT NULL,
   month INTEGER NOT NULL,
   year INTEGER NOT NULL,
-  crawled_at TIMESTAMP,
-  brands_crawled_at TIMESTAMP
+  crawled_at TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS brands (

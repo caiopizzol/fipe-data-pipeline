@@ -94,24 +94,18 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
       await repo.clearCrawlStatus(refRecord.id);
     }
 
-    // Phase 1: Crawl brands (if not already crawled)
-    const brandsCrawled = await repo.isBrandsCrawled(refRecord.id);
-    if (!brandsCrawled) {
-      log('  Phase 1: Crawling brands...');
-      const apiBrands = await fipeClient.getBrands(ref.Codigo);
-      const filteredBrands = options.brandCode
-        ? apiBrands.filter((b) => b.Value === options.brandCode)
-        : apiBrands;
+    // Phase 1: Crawl brands (always fetch - cheap API call)
+    log('  Phase 1: Crawling brands...');
+    const apiBrands = await fipeClient.getBrands(ref.Codigo);
+    const filteredBrands = options.brandCode
+      ? apiBrands.filter((b) => b.Value === options.brandCode)
+      : apiBrands;
 
-      for (const b of filteredBrands) {
-        const brand = await repo.upsertBrand(b.Value, b.Label);
-        await repo.upsertReferenceBrand(refRecord.id, brand.id);
-      }
-      await repo.markBrandsCrawled(refRecord.id);
-      log(`    Crawled ${filteredBrands.length} brands`);
-    } else {
-      log('  Phase 1: Brands already crawled');
+    for (const b of filteredBrands) {
+      const brand = await repo.upsertBrand(b.Value, b.Label);
+      await repo.upsertReferenceBrand(refRecord.id, brand.id);
     }
+    log(`    Crawled ${filteredBrands.length} brands`);
 
     // Phase 2: Crawl models for each uncrawled brand
     const uncrawledBrands = await repo.getUncrawledReferenceBrands(refRecord.id);
@@ -143,7 +137,10 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
             }
           }
 
-          await repo.markReferenceBrandModelsCrawled(brand.id);
+          // Only mark as crawled if we fetched ALL models (no filter)
+          if (!options.modelCodes) {
+            await repo.markReferenceBrandModelsCrawled(brand.id);
+          }
         } catch {
           // Models fetch failed - leave uncrawled for retry
           log(`    Error crawling models for ${brand.name}`);
