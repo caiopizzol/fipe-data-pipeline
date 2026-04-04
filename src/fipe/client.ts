@@ -71,13 +71,26 @@ export class FipeClient {
   ): Promise<T> {
     await this.throttle();
 
-    const response = await fetch(`${BASE_URL}/${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${BASE_URL}/${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+    } catch (error) {
+      if (retries > 0) {
+        const waitTime = this.calculateBackoff(attempt);
+        console.log(
+          `Network error (${error instanceof Error ? error.message : error}), waiting ${waitTime}ms before retry (${retries} retries left)`,
+        );
+        await sleep(waitTime);
+        return this.request(endpoint, body, retries - 1, attempt + 1);
+      }
+      throw error;
+    }
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -124,11 +137,6 @@ export class FipeClient {
   async getReferenceTables(): Promise<ReferenceTable[]> {
     const data = await this.request<unknown>('ConsultarTabelaDeReferencia', {});
     return referenceTablesSchema.parse(data);
-  }
-
-  async getReferenceTables2025(): Promise<ReferenceTable[]> {
-    const all = await this.getReferenceTables();
-    return all.filter((ref) => ref.Mes.includes('2025'));
   }
 
   async getBrands(referenceCode: number): Promise<Brand[]> {

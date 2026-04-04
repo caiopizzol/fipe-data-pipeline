@@ -59,7 +59,6 @@ bun run crawl -- --brand 59 --model 5940         # modelo específico
 bun run crawl -- --reference 328                 # tabela de referência específica
 bun run crawl -- --classify                      # classificar modelos novos via AI
 bun run crawl -- --force                         # re-buscar tudo
-ALLOWED_BRANDS=21,22,23 bun run crawl            # limitar marcas via env
 
 bun run status                                   # estatísticas do banco
 bun run classify                                 # classificar modelos sem segmento
@@ -83,7 +82,6 @@ DATABASE_URL=postgres://postgres:postgres@localhost:5433/fipe
 RATE_LIMIT_MS=800        # Delay mínimo entre requests (ms)
 MAX_THROTTLE_MS=5000     # Delay máximo quando rate limited (ms)
 MAX_RETRIES=3
-ALLOWED_BRANDS=          # Códigos FIPE de marcas, separados por vírgula (opcional)
 ANTHROPIC_API_KEY=       # Para classificação de segmentos via AI (opcional)
 ```
 

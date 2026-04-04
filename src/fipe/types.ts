@@ -1,46 +1,21 @@
-export interface ReferenceTable {
-  Codigo: number;
-  Mes: string;
-}
+import type { z } from 'zod';
+import type {
+  brandSchema,
+  fipeErrorSchema,
+  modelSchema,
+  modelsResponseSchema,
+  priceSchema,
+  referenceTableSchema,
+  yearSchema,
+} from './schemas.js';
 
-export interface Brand {
-  Label: string;
-  Value: string;
-}
-
-export interface Model {
-  Label: string;
-  Value: number;
-}
-
-export interface ModelsResponse {
-  Modelos: Model[];
-  Anos?: Year[];
-}
-
-export interface Year {
-  Label: string;
-  Value: string; // format: "2020-1" (year-fuelCode)
-}
-
-export interface Price {
-  Valor: string;
-  Marca: string;
-  Modelo: string;
-  AnoModelo: number;
-  Combustivel: string;
-  CodigoFipe: string;
-  MesReferencia: string;
-  Autenticacao: string;
-  TipoVeiculo: number;
-  SiglaCombustivel: string;
-  DataConsulta: string;
-}
-
-export interface FipeError {
-  codigo: string;
-  erro: string;
-}
+export type ReferenceTable = z.infer<typeof referenceTableSchema>;
+export type Brand = z.infer<typeof brandSchema>;
+export type Model = z.infer<typeof modelSchema>;
+export type ModelsResponse = z.infer<typeof modelsResponseSchema>;
+export type Year = z.infer<typeof yearSchema>;
+export type Price = z.infer<typeof priceSchema>;
+export type FipeError = z.infer<typeof fipeErrorSchema>;
 
 export interface PriceParams {
   referenceCode: number;

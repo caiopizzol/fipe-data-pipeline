@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, count, eq, isNull, sql } from 'drizzle-orm';
 import { db } from './connection.js';
 import {
   type Segment,
@@ -28,15 +28,6 @@ export async function markReferenceCrawled(code: number) {
     .update(referenceTables)
     .set({ crawledAt: new Date() })
     .where(eq(referenceTables.code, code));
-}
-
-export async function getCrawledReferences(): Promise<number[]> {
-  const rows = await db
-    .select({ code: referenceTables.code })
-    .from(referenceTables)
-    .where(eq(referenceTables.crawledAt, referenceTables.crawledAt)); // not null
-
-  return rows.map((r) => r.code);
 }
 
 export async function clearCrawlStatus(referenceId: number) {
@@ -99,15 +90,6 @@ export async function upsertModelYear(
 }
 
 // Prices
-export async function priceExists(modelYearId: number, referenceTableId: number): Promise<boolean> {
-  const [existing] = await db
-    .select({ id: prices.id })
-    .from(prices)
-    .where(and(eq(prices.modelYearId, modelYearId), eq(prices.referenceTableId, referenceTableId)))
-    .limit(1);
-  return !!existing;
-}
-
 export async function upsertPrice(
   modelYearId: number,
   referenceTableId: number,
@@ -140,10 +122,10 @@ export async function upsertPrice(
 
 // Stats
 export async function getStats() {
-  const [brandsCount] = await db.select({ count: brands.id }).from(brands);
-  const [modelsCount] = await db.select({ count: models.id }).from(models);
-  const [pricesCount] = await db.select({ count: prices.id }).from(prices);
-  const [refsCount] = await db.select({ count: referenceTables.id }).from(referenceTables);
+  const [brandsCount] = await db.select({ count: count() }).from(brands);
+  const [modelsCount] = await db.select({ count: count() }).from(models);
+  const [pricesCount] = await db.select({ count: count() }).from(prices);
+  const [refsCount] = await db.select({ count: count() }).from(referenceTables);
 
   return {
     brands: brandsCount?.count ?? 0,
@@ -187,24 +169,6 @@ export async function getModelById(modelId: number) {
     .where(eq(models.id, modelId));
 
   return model;
-}
-
-// Cached data queries (for skip-sync mode)
-export async function getAllBrands() {
-  return db.select().from(brands);
-}
-
-export async function getModelsByBrandId(brandId: number) {
-  return db.select().from(models).where(eq(models.brandId, brandId));
-}
-
-export async function getModelYearsByModelId(modelId: number) {
-  return db.select().from(modelYears).where(eq(modelYears.modelId, modelId));
-}
-
-export async function hasCachedData(): Promise<boolean> {
-  const [brand] = await db.select({ id: brands.id }).from(brands).limit(1);
-  return !!brand;
 }
 
 // Reference Brands (crawl status tracking)
@@ -355,14 +319,6 @@ export async function markReferenceModelYearPriceCrawled(referenceModelYearId: n
     .update(referenceModelYears)
     .set({ priceCrawledAt: new Date() })
     .where(eq(referenceModelYears.id, referenceModelYearId));
-}
-
-export async function markReferenceModelYearsPriceCrawledBatch(ids: number[]) {
-  if (ids.length === 0) return;
-  await db
-    .update(referenceModelYears)
-    .set({ priceCrawledAt: new Date() })
-    .where(inArray(referenceModelYears.id, ids));
 }
 
 export async function refreshLatestPrices() {
