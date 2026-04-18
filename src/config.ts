@@ -6,6 +6,7 @@ const envSchema = z.object({
   MAX_THROTTLE_MS: z.coerce.number().default(5000),
   MAX_RETRIES: z.coerce.number().default(3),
   ANTHROPIC_API_KEY: z.string().optional(),
+  FIPE_PROXY: z.string().url().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

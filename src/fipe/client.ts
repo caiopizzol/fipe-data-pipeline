@@ -79,6 +79,7 @@ export class FipeClient {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(body),
+        ...(env.FIPE_PROXY ? { proxy: env.FIPE_PROXY } : {}),
       });
     } catch (error) {
       if (retries > 0) {
