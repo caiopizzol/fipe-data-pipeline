@@ -23,12 +23,21 @@
 
 ## Início Rápido
 
+**Tudo via Docker** — sobe o banco, aplica o schema e inicia o crawler automaticamente:
+
 ```bash
 cp .env.example .env
-docker compose up -d   # PostgreSQL
-bun install            # dependências
-bun run db:push        # schema
-bun run crawl          # crawl
+docker compose up --build
+```
+
+**Desenvolvimento local:**
+
+```bash
+cp .env.example .env
+docker compose up -d postgres   # Só o banco
+bun install                     # dependências
+bun run db:push                 # schema
+bun run crawl                   # crawl
 ```
 
 ## Comandos
@@ -67,22 +76,52 @@ bun run classify -- --dry-run                    # preview da classificação
 
 ## Docker
 
-```bash
-docker build -t fipe-crawler .
-docker run -d --name fipe --env-file .env fipe-crawler
+O `docker compose up` sobe três serviços em ordem:
 
-docker exec fipe bun src/index.ts crawl --brand 25 --year 2024 --month 6
-docker exec fipe bun src/index.ts status
+| Serviço | Imagem | O que faz |
+|---|---|---|
+| `postgres` | `postgres:16-alpine` | Banco de dados |
+| `migrate` | `Dockerfile.migrate` | Aplica o schema (`db:push`) e encerra |
+| `crawler` | `Dockerfile` | Executa o crawler e reinicia sempre que termina |
+
+O crawler só inicia após `migrate` concluir com sucesso.
+
+**Customizar o comando do crawler:**
+
+```bash
+CRAWLER_COMMAND="bun run crawl -- --year 2024" docker compose up --build
+```
+
+**Controlar o comportamento de restart:**
+
+```bash
+RESTART_POLICY=no docker compose up --build   # roda uma vez e para
+```
+
+**Executar comandos avulsos no container:**
+
+```bash
+docker exec fipe-crawler bun src/index.ts status
+docker exec fipe-crawler bun src/index.ts crawl --brand 25 --year 2024 --month 6
 ```
 
 ## Configuração
 
 ```bash
+# Banco
+DB_PORT=5433
 DATABASE_URL=postgres://postgres:postgres@localhost:5433/fipe
-RATE_LIMIT_MS=800        # Delay mínimo entre requests (ms)
-MAX_THROTTLE_MS=5000     # Delay máximo quando rate limited (ms)
+
+# Crawler
+RATE_LIMIT_MS=800    # Delay mínimo entre requests (ms)
+MAX_THROTTLE_MS=5000 # Delay máximo quando rate limited (ms)
 MAX_RETRIES=3
-ANTHROPIC_API_KEY=       # Para classificação de segmentos via AI (opcional)
+
+ANTHROPIC_API_KEY=   # Para classificação de segmentos via AI (opcional)
+
+# Docker Compose
+CRAWLER_COMMAND=bun run crawl
+RESTART_POLICY=always
 ```
 
 ## Schema

@@ -3,18 +3,48 @@ services:
     image: postgres:16-alpine
     container_name: fipe-postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: fipe
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set (see .env.example)}
+      POSTGRES_DB: ${POSTGRES_DB:-fipe}
     ports:
-      - '5433:5432'
+      - '127.0.0.1:${DB_PORT:-5433}:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres}']
       interval: 5s
       timeout: 5s
       retries: 5
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrate
+    container_name: fipe-migrate
+    command: bun run db:push
+    restart: 'no'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-fipe}
+
+  crawler:
+    build: .
+    container_name: fipe-crawler
+    command: sh -c "${CRAWLER_COMMAND:-bun run crawl}"
+    restart: "${RESTART_POLICY:-always}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-fipe}
+      RATE_LIMIT_MS: ${RATE_LIMIT_MS:-800}
+      MAX_THROTTLE_MS: ${MAX_THROTTLE_MS:-5000}
+      MAX_RETRIES: ${MAX_RETRIES:-3}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
 
 volumes:
   postgres_data:
