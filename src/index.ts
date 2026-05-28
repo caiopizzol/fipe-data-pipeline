@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
+import { runBackup, runRestoreDrill } from './backup.js';
 import { classifyModels } from './classifier/segment-classifier.js';
 import { crawl, status } from './crawler/processor.js';
 import { closeConnection } from './db/connection.js';
@@ -121,6 +122,30 @@ program
       console.log(`\nDone! Classified: ${classified}, Failed: ${failed}`);
     } catch (err) {
       console.error('Classification failed:', err);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('backup')
+  .description('pg_dump the database and upload to R2 with retention')
+  .action(async () => {
+    try {
+      await runBackup();
+    } catch (err) {
+      console.error('Backup failed:', err);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('restore-drill')
+  .description('Download the latest R2 backup and verify it restores into a scratch database')
+  .action(async () => {
+    try {
+      await runRestoreDrill();
+    } catch (err) {
+      console.error('Restore drill failed:', err);
       process.exit(1);
     }
   });
