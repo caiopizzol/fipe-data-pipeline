@@ -39,6 +39,8 @@ bun run db:push        # Criar/atualizar schema
 bun run crawl          # Executar crawler
 bun run status         # Estatísticas do banco
 bun run classify       # Classificar modelos via AI
+bun run backup         # Backup (pg_dump) para storage S3/R2 com retenção
+bun run restore-drill  # Restaura o último backup num banco temporário e valida
 bun run lint           # Verificar código
 bun run format         # Formatar código
 bun run typecheck      # Verificar tipos
@@ -83,6 +85,12 @@ RATE_LIMIT_MS=800        # Delay mínimo entre requests (ms)
 MAX_THROTTLE_MS=5000     # Delay máximo quando rate limited (ms)
 MAX_RETRIES=3
 ANTHROPIC_API_KEY=       # Para classificação de segmentos via AI (opcional)
+
+# Backup para storage S3-compatível (opcional; usado por backup/restore-drill)
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_ENDPOINT=             # ex: https://<account>.r2.cloudflarestorage.com
+R2_BUCKET=
 ```
 
 ## Schema
