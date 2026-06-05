@@ -7,6 +7,7 @@ product:
   description: Pipeline para coletar dados históricos de preços de veículos da Tabela FIPE.
 
 sources:
+  llms: { path: ./llms.txt }
   readme: { path: ./README.md }
   cli: { path: ./src/index.ts }
   config: { path: ./src/config.ts }
@@ -24,6 +25,7 @@ agents:
     maxTurns: 30
 
 contexts:
+  given_llms: { mode: inject, source: llms }
   given_readme: { mode: inject, source: readme }
   given_cli: { mode: inject, source: cli }
   given_config: { mode: inject, source: config }
@@ -58,7 +60,8 @@ facts:
   classify_optional:
     statement: Explica que ANTHROPIC_API_KEY é opcional e usado para classificação de segmentos.
     match:
-      allOf: ["ANTHROPIC_API_KEY", "opcional", "classificação de segmentos"]
+      allOf: ["ANTHROPIC_API_KEY", "opcional"]
+      anyOf: ["classificação de segmentos", "classificação de modelos por segmento", "segmento"]
   classify_dry_run:
     statement: Mostra preview de classificação com dry run.
     match:
@@ -116,9 +119,9 @@ misstatements:
 
 questions:
   - id: first_run
-    question: Como eu preparo o projeto e rodo o primeiro crawl?
+    question: Como eu preparo o projeto, rodo o primeiro crawl e quais comandos principais devo conhecer?
     agents: [quick]
-    contexts: [given_readme]
+    contexts: [given_llms]
     expects: [requirements, quickstart, project_commands]
     rejects: [wrong_runtime]
     examples:
@@ -130,7 +133,7 @@ questions:
   - id: scoped_crawl
     question: Como limito o crawl por ano, mês, marca, modelo ou referência?
     agents: [quick]
-    contexts: [given_readme, given_cli]
+    contexts: [given_llms]
     expects: [crawl_year_month, crawl_brand_model, crawl_classify_force]
     rejects: [force_default]
     examples:
@@ -142,7 +145,7 @@ questions:
   - id: classification
     question: Como funciona a classificação de modelos por segmento?
     agents: [quick]
-    contexts: [given_readme, given_config]
+    contexts: [given_llms]
     expects: [classify_optional, classify_dry_run]
     rejects: [classify_required]
     examples:
@@ -154,7 +157,7 @@ questions:
   - id: docker_and_env
     question: Como rodo o crawler via Docker e quais variáveis importam?
     agents: [quick]
-    contexts: [given_readme, given_config]
+    contexts: [given_llms]
     expects: [docker_usage, config_env, proxy_env]
     examples:
       pass:
@@ -165,7 +168,7 @@ questions:
   - id: backup_restore
     question: O que preciso para usar backup e restore-drill?
     agents: [quick]
-    contexts: [given_readme, given_backup]
+    contexts: [given_llms]
     expects: [backup_env, backup_retention]
     rejects: [backup_required]
     examples:
@@ -175,9 +178,9 @@ questions:
         - "R2 é obrigatório para crawl e o projeto não tem retenção diária ou mensal."
 
   - id: schema
-    question: Qual é a estrutura básica do banco FIPE?
+    question: Qual é a estrutura básica do banco FIPE e qual fonte, atualização e cobertura ele representa?
     agents: [quick]
-    contexts: [given_readme, given_schema]
+    contexts: [given_llms]
     expects: [schema_tables, schema_relationship, source_data]
     examples:
       pass:
@@ -194,7 +197,7 @@ builds:
       --month 6`, then run `bun run status`. Do not use npm, do not add
       `--force`, and do not add `--classify`.
     agents: [builder]
-    contexts: [given_readme, given_cli]
+    contexts: [given_llms]
     trials: 2
     workspace:
       path: ./fixtures/pickled/targeted-crawl
