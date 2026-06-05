@@ -1,0 +1,211 @@
+# yaml-language-server: $schema=https://pickled.dev/schema/pickled.schema.json
+
+schemaVersion: 2
+
+product:
+  name: fipe-data-pipeline
+  description: Pipeline para coletar dados históricos de preços de veículos da Tabela FIPE.
+
+sources:
+  readme: { path: ./README.md }
+  cli: { path: ./src/index.ts }
+  config: { path: ./src/config.ts }
+  backup: { path: ./src/backup.ts }
+  schema: { path: ./initial.sql }
+
+agents:
+  quick:
+    provider: claude-code
+    model: claude-haiku-4-5
+    maxTurns: 5
+  builder:
+    provider: claude-code
+    model: claude-haiku-4-5
+    maxTurns: 30
+
+contexts:
+  given_readme: { mode: inject, source: readme }
+  given_cli: { mode: inject, source: cli }
+  given_config: { mode: inject, source: config }
+  given_backup: { mode: inject, source: backup }
+  given_schema: { mode: inject, source: schema }
+
+facts:
+  requirements:
+    statement: Lista Bun e Docker como requisitos.
+    match:
+      allOf: ["Bun", "Docker"]
+  quickstart:
+    statement: Mostra os comandos de início rápido.
+    match:
+      allOf: ["cp .env.example .env", "docker compose up -d", "bun install", "bun run db:push", "bun run crawl"]
+  project_commands:
+    statement: Lista comandos operacionais principais.
+    match:
+      allOf: ["bun run status", "bun run classify", "bun run backup", "bun run restore-drill", "bun run typecheck"]
+  crawl_year_month:
+    statement: Mostra filtros de ano e mês, incluindo ranges e listas.
+    match:
+      allOf: ["--year 2020-2024", "--year 2020,2022,2024", "--month 1-6"]
+  crawl_brand_model:
+    statement: Mostra filtros de marca, modelo e referência.
+    match:
+      allOf: ["--brand 59", "--brand 21,22,59", "--model 5940", "--reference 328"]
+  crawl_classify_force:
+    statement: Explica flags de classificação e reprocessamento.
+    match:
+      allOf: ["--classify", "--force"]
+  classify_optional:
+    statement: Explica que ANTHROPIC_API_KEY é opcional e usado para classificação de segmentos.
+    match:
+      allOf: ["ANTHROPIC_API_KEY", "opcional", "classificação de segmentos"]
+  classify_dry_run:
+    statement: Mostra preview de classificação com dry run.
+    match:
+      allOf: ["bun run classify -- --dry-run"]
+  docker_usage:
+    statement: Mostra build, run e docker exec para crawler.
+    match:
+      allOf: ["docker build -t fipe-crawler .", "docker run -d --name fipe --env-file .env fipe-crawler", "docker exec fipe bun src/index.ts crawl"]
+  config_env:
+    statement: Nomeia variáveis principais de banco e rate limit.
+    match:
+      allOf: ["DATABASE_URL", "RATE_LIMIT_MS", "MAX_THROTTLE_MS", "MAX_RETRIES"]
+  proxy_env:
+    statement: Nomeia FIPE_PROXY como variável opcional de proxy.
+    match:
+      allOf: ["FIPE_PROXY"]
+  backup_env:
+    statement: Nomeia variáveis R2 para backup e restore drill.
+    match:
+      allOf: ["R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_ENDPOINT", "R2_BUCKET"]
+  backup_retention:
+    statement: Explica retenção de backups diária e mensal.
+    match:
+      allOf: ["daily/", "monthly/", "DAILY_KEEP", "MONTHLY_KEEP"]
+  schema_tables:
+    statement: Nomeia as tabelas principais do schema.
+    match:
+      allOf: ["reference_tables", "brands", "models", "model_years", "prices"]
+  schema_relationship:
+    statement: Explica relação entre tabelas de referência, modelos e preços.
+    match:
+      allOf: ["reference_tables --> prices", "brands --> models --> model_years --> prices"]
+  source_data:
+    statement: Descreve fonte, atualização e cobertura da Tabela FIPE.
+    match:
+      allOf: ["veiculos.fipe.org.br", "Mensal", "Carros, motos, caminhões e utilitários"]
+
+misstatements:
+  wrong_runtime:
+    statement: Troca Bun por npm como fluxo principal.
+    match:
+      anyOf: ["npm install", "npm run crawl"]
+  classify_required:
+    statement: Afirma que ANTHROPIC_API_KEY é obrigatório para crawl comum.
+    match:
+      anyOf: ["ANTHROPIC_API_KEY é obrigatório", "requires ANTHROPIC_API_KEY for crawl"]
+  backup_required:
+    statement: Afirma que R2 é obrigatório para o crawler.
+    match:
+      anyOf: ["R2 é obrigatório para crawl", "R2 is required for crawling"]
+  force_default:
+    statement: Afirma que o crawler sempre reprocessa tudo por padrão.
+    match:
+      anyOf: ["sempre reprocessa tudo", "always re-fetches everything"]
+
+questions:
+  - id: first_run
+    question: Como eu preparo o projeto e rodo o primeiro crawl?
+    agents: [quick]
+    contexts: [given_readme]
+    expects: [requirements, quickstart, project_commands]
+    rejects: [wrong_runtime]
+    examples:
+      pass:
+        - "Use Bun e Docker. Rode `cp .env.example .env`, `docker compose up -d`, `bun install`, `bun run db:push` e `bun run crawl`. Depois use comandos como `bun run status`, `bun run classify`, `bun run backup`, `bun run restore-drill` e `bun run typecheck`."
+      fail:
+        - "Use `npm install`, depois `npm run crawl`; não precisa de Bun."
+
+  - id: scoped_crawl
+    question: Como limito o crawl por ano, mês, marca, modelo ou referência?
+    agents: [quick]
+    contexts: [given_readme, given_cli]
+    expects: [crawl_year_month, crawl_brand_model, crawl_classify_force]
+    rejects: [force_default]
+    examples:
+      pass:
+        - "Use filtros como `--year 2020-2024`, `--year 2020,2022,2024`, `--month 1-6`, `--brand 59`, `--brand 21,22,59`, `--model 5940`, `--reference 328`. `--classify` classifica modelos novos e `--force` re-busca tudo."
+      fail:
+        - "O crawler sempre reprocessa tudo por padrão, então não há flag `--force` nem filtros por marca."
+
+  - id: classification
+    question: Como funciona a classificação de modelos por segmento?
+    agents: [quick]
+    contexts: [given_readme, given_config]
+    expects: [classify_optional, classify_dry_run]
+    rejects: [classify_required]
+    examples:
+      pass:
+        - "`ANTHROPIC_API_KEY` é opcional e usado para classificação de segmentos. Você pode rodar `bun run crawl -- --classify`, `bun run classify`, ou pré-visualizar com `bun run classify -- --dry-run`."
+      fail:
+        - "ANTHROPIC_API_KEY é obrigatório para qualquer crawl comum."
+
+  - id: docker_and_env
+    question: Como rodo o crawler via Docker e quais variáveis importam?
+    agents: [quick]
+    contexts: [given_readme, given_config]
+    expects: [docker_usage, config_env, proxy_env]
+    examples:
+      pass:
+        - "Use `docker build -t fipe-crawler .`, `docker run -d --name fipe --env-file .env fipe-crawler` e `docker exec fipe bun src/index.ts crawl`. Configure `DATABASE_URL`, `RATE_LIMIT_MS`, `MAX_THROTTLE_MS`, `MAX_RETRIES` e opcionalmente `FIPE_PROXY`."
+      fail:
+        - "O Docker roda sem `.env` e ignora `DATABASE_URL`."
+
+  - id: backup_restore
+    question: O que preciso para usar backup e restore-drill?
+    agents: [quick]
+    contexts: [given_readme, given_backup]
+    expects: [backup_env, backup_retention]
+    rejects: [backup_required]
+    examples:
+      pass:
+        - "Backup e restore-drill usam R2 com `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT` e `R2_BUCKET`. A retenção usa prefixos `daily/` e `monthly/`, com `DAILY_KEEP` e `MONTHLY_KEEP`."
+      fail:
+        - "R2 é obrigatório para crawl e o projeto não tem retenção diária ou mensal."
+
+  - id: schema
+    question: Qual é a estrutura básica do banco FIPE?
+    agents: [quick]
+    contexts: [given_readme, given_schema]
+    expects: [schema_tables, schema_relationship, source_data]
+    examples:
+      pass:
+        - "O schema tem reference_tables, brands, models, model_years e prices. A relação é `reference_tables --> prices` e `brands --> models --> model_years --> prices`. A fonte é `veiculos.fipe.org.br`, com atualização Mensal e cobertura de Carros, motos, caminhões e utilitários."
+      fail:
+        - "Os preços ficam em uma tabela única sem reference_tables, brands, models ou model_years."
+
+builds:
+  - id: create_targeted_crawl_script
+    goal: >-
+      Create `scripts/crawl-vw-june-2024.sh`, an executable helper for a
+      narrow FIPE crawl. The script should use `set -euo pipefail`, run
+      `bun run db:push`, then run `bun run crawl -- --brand 59 --year 2024
+      --month 6`, then run `bun run status`. Do not use npm, do not add
+      `--force`, and do not add `--classify`.
+    agents: [builder]
+    contexts: [given_readme, given_cli]
+    trials: 2
+    workspace:
+      path: ./fixtures/pickled/targeted-crawl
+    verifier:
+      failToPass:
+        - { name: targeted crawl script, run: ./tests/verify-targeted-crawl.sh }
+      passToPass:
+        - { name: keeps fixture instructions, run: test -f README.md }
+    referenceSolution:
+      patch: ./fixtures/pickled/targeted-crawl.solution.patch
+
+thresholds:
+  questions: 80
+  builds: 80

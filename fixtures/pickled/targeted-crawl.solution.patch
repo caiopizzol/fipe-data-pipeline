@@ -1,0 +1,12 @@
+diff --git a/scripts/crawl-vw-june-2024.sh b/scripts/crawl-vw-june-2024.sh
+new file mode 100755
+index 0000000..d19b6e6
+--- /dev/null
++++ b/scripts/crawl-vw-june-2024.sh
+@@ -0,0 +1,6 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++bun run db:push
++bun run crawl -- --brand 59 --year 2024 --month 6
++bun run status
