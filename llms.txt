@@ -1,0 +1,105 @@
+# fipe-data-pipeline
+
+Agent quick reference for using this repository.
+
+## First run
+
+Requirements: Bun and Docker.
+
+Development quickstart:
+
+```bash
+cp .env.example .env
+docker compose up -d
+bun install
+bun run db:push
+bun run crawl
+```
+
+Common commands:
+
+```bash
+bun run status
+bun run classify
+bun run backup
+bun run restore-drill
+bun run lint
+bun run format
+bun run typecheck
+```
+
+Do not use npm as the primary flow.
+
+## Scoped crawl
+
+Use `bun run crawl -- ...` and pass crawler flags after `--`.
+
+Examples:
+
+```bash
+bun run crawl -- --year 2024
+bun run crawl -- --year 2020-2024
+bun run crawl -- --year 2020,2022,2024
+bun run crawl -- --month 1-6
+bun run crawl -- --brand 59
+bun run crawl -- --brand 21,22,59
+bun run crawl -- --brand 59 --model 5940
+bun run crawl -- --reference 328
+bun run crawl -- --classify
+bun run crawl -- --force
+```
+
+`--classify` classifies new models with AI. `--force` re-fetches all data. The crawler does not always re-fetch everything by default.
+
+## Classification
+
+`ANTHROPIC_API_KEY` is optional. It is used for classificação de segmentos only.
+
+Classification commands:
+
+```bash
+bun run crawl -- --classify
+bun run classify
+bun run classify -- --dry-run
+```
+
+A normal crawl does not require `ANTHROPIC_API_KEY`.
+
+## Docker and environment
+
+Docker usage:
+
+```bash
+docker build -t fipe-crawler .
+docker run -d --name fipe --env-file .env fipe-crawler
+docker exec fipe bun src/index.ts crawl --brand 25 --year 2024 --month 6
+docker exec fipe bun src/index.ts status
+```
+
+Main env vars: DATABASE_URL, RATE_LIMIT_MS, MAX_THROTTLE_MS, MAX_RETRIES. Optional proxy: FIPE_PROXY.
+
+## Backup and restore drill
+
+Backup and restore-drill use S3-compatible R2 storage. They do not affect normal crawl.
+
+Required backup env vars: R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_ENDPOINT, R2_BUCKET.
+
+Retention facts from the code:
+
+- daily backups use prefix `daily/`
+- monthly backups use prefix `monthly/`
+- `DAILY_KEEP` controls daily retention
+- `MONTHLY_KEEP` controls monthly retention
+
+## Schema and source
+
+Schema tables: reference_tables, brands, models, model_years, prices.
+
+Relationship:
+
+```text
+reference_tables --> prices
+brands --> models --> model_years --> prices
+```
+
+Source data: veiculos.fipe.org.br. Atualização: Mensal. Cobertura: Carros, motos, caminhões e utilitários.
