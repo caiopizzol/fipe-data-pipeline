@@ -226,7 +226,6 @@ export async function runRefresh(options: RefreshOptions = {}): Promise<RefreshE
   try {
     const { env } = await import('../config.js');
     healthcheckUrl = env.HC_REFRESH_URL;
-    await pingHealthcheck(healthcheckUrl, 'start');
 
     lock = await acquireRefreshLock();
     if (!lock) {
@@ -234,6 +233,8 @@ export async function runRefresh(options: RefreshOptions = {}): Promise<RefreshE
       exitCode = 0;
       return exitCode;
     }
+
+    await pingHealthcheck(healthcheckUrl, 'start');
 
     const [{ fipeClient }, repo, { crawl }] = await Promise.all([
       import('../fipe/client.js'),
@@ -326,6 +327,11 @@ export async function runRefresh(options: RefreshOptions = {}): Promise<RefreshE
         errorLog(`[refresh] failed to release advisory lock: ${errorMessage(error)}`);
       }
     }
-    await pingHealthcheck(healthcheckUrl, exitCode === 0 ? 'success' : 'fail');
+    // A lock-held no-op must stay silent: daily "already running" success
+    // pings would mask a wedged refresh from the healthcheck's missed-ping
+    // alerting. Failures ping even without the lock (e.g. DB unreachable).
+    if (lock || exitCode !== 0) {
+      await pingHealthcheck(healthcheckUrl, exitCode === 0 ? 'success' : 'fail');
+    }
   }
 }

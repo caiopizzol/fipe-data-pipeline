@@ -49,8 +49,21 @@ SET latest_prices_refreshed_at = COALESCE(latest_prices_refreshed_at, published_
     backup_completed_at = COALESCE(backup_completed_at, published_at)
 WHERE published_at IS NOT NULL;
 
--- DROP MATERIALIZED VIEW removes grants; re-apply production grants after this migration.
--- GRANT SELECT ON latest_prices TO <role>;
+-- DROP MATERIALIZED VIEW removes grants. Prod (PG17) roles: fipe_app reads,
+-- fipe_ingest refreshes via the PG17 MAINTAIN privilege (no ownership needed).
+-- On PG < 17 the refresh role must instead own the view or be its owner's member.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'fipe_app') THEN
+    GRANT SELECT ON latest_prices TO fipe_app;
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'fipe_ingest') THEN
+    GRANT SELECT ON latest_prices TO fipe_ingest;
+    IF current_setting('server_version_num')::int >= 170000 THEN
+      EXECUTE 'GRANT MAINTAIN ON latest_prices TO fipe_ingest';
+    END IF;
+  END IF;
+END $$;
 
 COMMIT;
 

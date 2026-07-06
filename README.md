@@ -87,8 +87,11 @@ validation exits `1` without setting `published_at`, so the next run resumes fro
 If a materialized-view refresh fails after `published_at` is set, a later refresh run retries
 `latest_prices` before reporting success.
 
-Set `HC_REFRESH_URL` to enable best-effort healthchecks: `/start` at the beginning, the base URL on
-success/no-op, and `/fail` on failure. Healthcheck failures never fail the refresh. With `--backup`,
+Set `HC_REFRESH_URL` to enable best-effort healthchecks: `/start` after the advisory lock is
+acquired, the base URL on success, and `/fail` on failure. Lock-held no-op ticks ping nothing, so a
+wedged multi-day run shows up as a missed ping instead of being masked by daily "already running"
+successes; configure the check with a generous grace period (>= 36h) since a catch-up crawl can run
+for many hours. Healthcheck failures never fail the refresh. With `--backup`,
 the existing backup job runs whenever any published reference has not yet been backed up, so
 transient backup failures are retried on later cron ticks.
 
