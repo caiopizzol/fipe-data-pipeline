@@ -7,6 +7,7 @@ const envSchema = z.object({
   MAX_RETRIES: z.coerce.number().default(3),
   ANTHROPIC_API_KEY: z.string().optional(),
   FIPE_PROXY: z.string().url().optional(),
+  HC_REFRESH_URL: z.string().url().optional(),
   // R2 backup target (used by the `backup` / `restore-drill` commands only).
   R2_ACCESS_KEY_ID: z.string().optional(),
   R2_SECRET_ACCESS_KEY: z.string().optional(),

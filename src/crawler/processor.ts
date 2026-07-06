@@ -2,6 +2,9 @@ import cliProgress from 'cli-progress';
 import { classifySingleModel } from '../classifier/segment-classifier.js';
 import * as repo from '../db/repository.js';
 import { fipeClient } from '../fipe/client.js';
+import { parseReferenceMonth } from './reference.js';
+
+export { parseReferenceMonth } from './reference.js';
 
 function parseYearValue(value: string): { year: number; fuelCode: number } {
   // Format: "2020-1" (year-fuelCode)
@@ -15,30 +18,6 @@ function parseYearValue(value: string): { year: number; fuelCode: number } {
 function parsePrice(valor: string): string {
   // "R$ 4.147,00" -> "4147.00"
   return valor.replace('R$ ', '').replace(/\./g, '').replace(',', '.');
-}
-
-function parseReferenceMonth(mes: string): { month: number; year: number } {
-  // "dezembro/2025 " -> { month: 12, year: 2025 }
-  const months: Record<string, number> = {
-    janeiro: 1,
-    fevereiro: 2,
-    março: 3,
-    abril: 4,
-    maio: 5,
-    junho: 6,
-    julho: 7,
-    agosto: 8,
-    setembro: 9,
-    outubro: 10,
-    novembro: 11,
-    dezembro: 12,
-  };
-
-  const [monthName, yearStr] = mes.trim().toLowerCase().split('/');
-  return {
-    month: months[monthName] || 0,
-    year: Number.parseInt(yearStr, 10),
-  };
 }
 
 interface CrawlOptions {
@@ -244,8 +223,22 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
       log('  Phase 4: All prices already crawled');
     }
 
-    await repo.markReferenceCrawled(ref.Codigo);
-    log(`  Completed reference ${ref.Codigo}`);
+    const backlog = await repo.getCrawlBacklog(refRecord.id);
+    if (
+      backlog.uncrawledBrands === 0 &&
+      backlog.uncrawledModels === 0 &&
+      backlog.uncrawledModelYears === 0
+    ) {
+      await repo.markReferenceCrawled(ref.Codigo);
+      log(`  Completed reference ${ref.Codigo}`);
+    } else {
+      log(
+        `  Reference ${ref.Codigo} still has backlog: ` +
+          `${backlog.uncrawledBrands} brands, ` +
+          `${backlog.uncrawledModels} models, ` +
+          `${backlog.uncrawledModelYears} model-years`,
+      );
+    }
   }
 
   if (totalPrices > 0) {

@@ -3,12 +3,12 @@ import postgres from 'postgres';
 import { env } from '../config.js';
 import * as schema from './schema.js';
 
-const client = postgres(env.DATABASE_URL, { max: 20 });
+export const postgresClient = postgres(env.DATABASE_URL, { max: 20 });
 
-export const db = drizzle(client, { schema });
+export const db = drizzle(postgresClient, { schema });
 
 export type Database = typeof db;
 
 export async function closeConnection() {
-  await client.end();
+  await postgresClient.end();
 }

@@ -3,7 +3,10 @@ CREATE TABLE IF NOT EXISTS reference_tables (
   code INTEGER UNIQUE NOT NULL,
   month INTEGER NOT NULL,
   year INTEGER NOT NULL,
-  crawled_at TIMESTAMP
+  crawled_at TIMESTAMP,
+  published_at TIMESTAMP,
+  latest_prices_refreshed_at TIMESTAMP,
+  backup_completed_at TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS brands (
@@ -88,3 +91,11 @@ CREATE INDEX IF NOT EXISTS idx_reference_models_ref ON reference_models(referenc
 CREATE INDEX IF NOT EXISTS idx_reference_models_model ON reference_models(model_id);
 CREATE INDEX IF NOT EXISTS idx_reference_model_years_ref ON reference_model_years(reference_table_id);
 CREATE INDEX IF NOT EXISTS idx_reference_model_years_my ON reference_model_years(model_year_id);
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS latest_prices AS
+SELECT DISTINCT ON (p.model_year_id) p.model_year_id, p.price_brl, p.fipe_code
+FROM prices p JOIN reference_tables rt ON p.reference_table_id = rt.id
+WHERE rt.published_at IS NOT NULL
+ORDER BY p.model_year_id, rt.year DESC, rt.month DESC;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_latest_prices_model_year ON latest_prices(model_year_id);

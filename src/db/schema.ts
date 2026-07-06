@@ -17,6 +17,9 @@ export const referenceTables = pgTable(
     month: integer('month').notNull(),
     year: integer('year').notNull(),
     crawledAt: timestamp('crawled_at'),
+    publishedAt: timestamp('published_at'),
+    latestPricesRefreshedAt: timestamp('latest_prices_refreshed_at'),
+    backupCompletedAt: timestamp('backup_completed_at'),
   },
   (table) => [index('idx_reference_year_month').on(table.year, table.month)],
 );

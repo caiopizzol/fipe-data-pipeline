@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import { runBackup, runRestoreDrill } from './backup.js';
 import { classifyModels } from './classifier/segment-classifier.js';
 import { crawl, status } from './crawler/processor.js';
+import { runRefresh } from './crawler/refresh.js';
 import { closeConnection } from './db/connection.js';
 import { getModelsWithoutSegment, updateModelSegment } from './db/repository.js';
 
@@ -38,6 +39,10 @@ function parseCommaSeparated(value: string): string[] {
   ];
 }
 
+function markCommandFailed(): void {
+  process.exitCode = 1;
+}
+
 program
   .command('crawl')
   .description('Crawl FIPE data and store in database')
@@ -61,7 +66,7 @@ program
       });
     } catch (err) {
       console.error('Crawl failed:', err);
-      process.exit(1);
+      markCommandFailed();
     }
   });
 
@@ -73,7 +78,7 @@ program
       await status();
     } catch (err) {
       console.error('Status failed:', err);
-      process.exit(1);
+      markCommandFailed();
     }
   });
 
@@ -122,7 +127,18 @@ program
       console.log(`\nDone! Classified: ${classified}, Failed: ${failed}`);
     } catch (err) {
       console.error('Classification failed:', err);
-      process.exit(1);
+      markCommandFailed();
+    }
+  });
+
+program
+  .command('refresh')
+  .description('Crawl and publish new complete FIPE reference tables')
+  .option('--backup', 'Run backup after publishing at least one reference')
+  .action(async (options: { backup?: boolean }) => {
+    const exitCode = await runRefresh({ backup: options.backup === true });
+    if (exitCode !== 0) {
+      process.exitCode = exitCode;
     }
   });
 
@@ -134,7 +150,7 @@ program
       await runBackup();
     } catch (err) {
       console.error('Backup failed:', err);
-      process.exit(1);
+      markCommandFailed();
     }
   });
 
@@ -146,13 +162,19 @@ program
       await runRestoreDrill();
     } catch (err) {
       console.error('Restore drill failed:', err);
-      process.exit(1);
+      markCommandFailed();
     }
   });
 
 async function main() {
-  await program.parseAsync();
-  await closeConnection();
+  try {
+    await program.parseAsync();
+  } finally {
+    await closeConnection();
+  }
 }
 
-main();
+main().catch((err) => {
+  console.error('Command failed:', err);
+  markCommandFailed();
+});

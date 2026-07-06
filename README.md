@@ -39,6 +39,7 @@ bun run db:push        # Criar/atualizar schema
 bun run crawl          # Executar crawler
 bun run status         # Estatísticas do banco
 bun run classify       # Classificar modelos via AI
+bun src/index.ts refresh --backup # Publicar novas tabelas completas e fazer backup
 bun run backup         # Backup (pg_dump) para storage S3/R2 com retenção
 bun run restore-drill  # Restaura o último backup num banco temporário e valida
 bun run lint           # Verificar código
@@ -67,6 +68,36 @@ bun run classify                                 # classificar modelos sem segme
 bun run classify -- --dry-run                    # preview da classificação
 ```
 
+## Monthly refresh
+
+The public site reads `latest_prices`, which only includes reference tables with
+`reference_tables.published_at IS NOT NULL`. Use the refresh command for the monthly publication
+flow:
+
+```bash
+bun src/index.ts refresh --backup
+```
+
+`refresh` takes a session-level Postgres advisory lock named `fipe_refresh`. If another refresh is
+already running, it logs that state and exits `0`, which is expected when a long crawl overlaps the
+next cron tick. It publishes only official reference tables newer than the latest published month,
+oldest first. Each candidate is crawled, then published only when checkpoint backlog is zero and its
+price count is at least 90% of the previous published reference's price count. Failed crawl or
+validation exits `1` without setting `published_at`, so the next run resumes from checkpoints.
+If a materialized-view refresh fails after `published_at` is set, a later refresh run retries
+`latest_prices` before reporting success.
+
+Set `HC_REFRESH_URL` to enable best-effort healthchecks: `/start` at the beginning, the base URL on
+success/no-op, and `/fail` on failure. Healthcheck failures never fail the refresh. With `--backup`,
+the existing backup job runs whenever any published reference has not yet been backed up, so
+transient backup failures are retried on later cron ticks.
+
+Intended Moor cron:
+
+```cron
+30 7 1-10 * * bun src/index.ts refresh --backup
+```
+
 ## Docker
 
 ```bash
@@ -85,6 +116,7 @@ RATE_LIMIT_MS=800        # Delay mínimo entre requests (ms)
 MAX_THROTTLE_MS=5000     # Delay máximo quando rate limited (ms)
 MAX_RETRIES=3
 ANTHROPIC_API_KEY=       # Para classificação de segmentos via AI (opcional)
+HC_REFRESH_URL=          # Healthchecks opcional para refresh mensal
 
 # Backup para storage S3-compatível (opcional; usado por backup/restore-drill)
 R2_ACCESS_KEY_ID=

@@ -8,6 +8,7 @@
     "classify": "bun src/index.ts classify",
     "backup": "bun src/index.ts backup",
     "restore-drill": "bun src/index.ts restore-drill",
+    "test": "bun test",
     "db:push": "drizzle-kit push",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
