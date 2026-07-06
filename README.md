@@ -98,8 +98,16 @@ transient backup failures are retried on later cron ticks.
 Intended Moor cron:
 
 ```cron
-30 7 1-10 * * bun src/index.ts refresh --backup
+30 7 1-10 * * setsid nohup bun src/index.ts refresh --backup >/proc/1/fd/1 2>&1 </dev/null &
 ```
+
+The command detaches because Moor kills cron execs after 10 minutes and a
+catch-up crawl runs for hours (observed: exec timeout terminated the process
+tree at 600000ms). The cron run itself always exits 0 immediately; completion
+and failure are reported by the Healthchecks pings and by the DB markers
+(`published_at`, `latest_prices_refreshed_at`, `backup_completed_at`), and
+progress is visible in the container logs. The advisory lock makes a tick that
+fires while a previous refresh is still running a silent no-op.
 
 ## Docker
 
