@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=https://cubic.dev/schema/cubic-repository-config.schema.json
+
+version: 1
+
+reviews:
+  custom_rules:
+    - name: Keep Pickled context aligned
+      file_paths:
+        - .cubic/agents/pickled-context-integrity.md
+      include:
+        - .env.example
+        - .github/workflows/pickled.yml
+        - Dockerfile
+        - README.md
+        - docker-compose.yml
+        - fixtures/pickled/**
+        - initial.sql
+        - llms.txt
+        - package.json
+        - pickled.yml
+        - src/**
