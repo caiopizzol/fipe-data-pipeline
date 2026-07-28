@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://cubic.dev/schema/cubic-repository-config.schema.json
+
+version: 1
+
+reviews:
+  custom_instructions: |
+    Preserve the monthly refresh publication guard: publish a reference only when its checkpoint
+    backlog is empty and its price count is at least 90% of the previous published reference,
+    except for the initial publication.
+
+    Treat crawl and publication checkpoints as retry contracts. FIPE fetch, latest-prices refresh,
+    and backup failures must leave their work pending; record completion only after the underlying
+    operation succeeds. Scrutinize crawl filters, force behavior, upserts, and schema changes for
+    partial crawls that advance global checkpoints, duplicate prices, or silent data gaps.
