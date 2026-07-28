@@ -3,12 +3,8 @@
 version: 1
 
 reviews:
-  custom_instructions: |
-    Preserve the monthly refresh publication guard: publish a reference only when its checkpoint
-    backlog is empty and its price count is at least 90% of the previous published reference,
-    except for the initial publication.
-
-    Treat crawl and publication checkpoints as retry contracts. FIPE fetch, latest-prices refresh,
-    and backup failures must leave their work pending; record completion only after the underlying
-    operation succeeds. Scrutinize crawl filters, force behavior, upserts, and schema changes for
-    partial crawls that advance global checkpoints, duplicate prices, or silent data gaps.
+  custom_instructions: >-
+    Scrutinize crawl filtering and checkpoint changes for silent partial-data completion. Reference
+    completion must come from an empty checkpoint backlog, failed FIPE items must remain pending for
+    retry, reruns must stay idempotent, and targeted or --force crawls must not advance or clear
+    checkpoint state outside their explicit scope.
