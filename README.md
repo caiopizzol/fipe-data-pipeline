@@ -152,12 +152,12 @@ Schema SQL completo em [`initial.sql`](./initial.sql).
 
 Estes dados são **públicos e oficiais**, disponibilizados pela Fundação Instituto de Pesquisas Econômicas (FIPE).
 
-| | |
-|---|---|
-| **Fonte** | [veiculos.fipe.org.br](https://veiculos.fipe.org.br) |
-| **Atualização** | Mensal (desde 2001) |
-| **Cobertura** | Carros, motos, caminhões e utilitários |
-| **Uso** | Referência para seguros, financiamentos, IPVA e negociação de veículos |
+|                 |                                                                        |
+| --------------- | ---------------------------------------------------------------------- |
+| **Fonte**       | [veiculos.fipe.org.br](https://veiculos.fipe.org.br)                   |
+| **Atualização** | Mensal (desde 2001)                                                    |
+| **Cobertura**   | Carros, motos, caminhões e utilitários                                 |
+| **Uso**         | Referência para seguros, financiamentos, IPVA e negociação de veículos |
 
 A Tabela FIPE é a referência de preço médio de veículos mais utilizada no Brasil. Os dados são coletados mensalmente junto a concessionárias, revendedoras e fabricantes em todo o país.
 

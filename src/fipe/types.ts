@@ -1,4 +1,4 @@
-import type { z } from 'zod';
+import type { z } from "zod";
 import type {
   brandSchema,
   fipeErrorSchema,
@@ -7,7 +7,7 @@ import type {
   priceSchema,
   referenceTableSchema,
   yearSchema,
-} from './schemas.js';
+} from "./schemas.js";
 
 export type ReferenceTable = z.infer<typeof referenceTableSchema>;
 export type Brand = z.infer<typeof brandSchema>;

@@ -1,5 +1,5 @@
-import { and, count, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm';
-import { db } from './connection.js';
+import { and, count, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { db } from "./connection.js";
 import {
   type Segment,
   brands,
@@ -10,7 +10,7 @@ import {
   referenceModelYears,
   referenceModels,
   referenceTables,
-} from './schema.js';
+} from "./schema.js";
 
 export interface CrawlBacklog {
   uncrawledBrands: number;
@@ -272,7 +272,7 @@ export async function getModelsWithoutSegment() {
 export async function updateModelSegment(
   modelId: number,
   segment: Segment,
-  source: 'ai' | 'manual',
+  source: "ai" | "manual",
 ) {
   await db.update(models).set({ segment, segmentSource: source }).where(eq(models.id, modelId));
 }

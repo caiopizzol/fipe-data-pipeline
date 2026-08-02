@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
@@ -18,7 +18,7 @@ const envSchema = z.object({
 const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success) {
-  console.error('Invalid environment variables:', parsed.error.flatten());
+  console.error("Invalid environment variables:", parsed.error.flatten());
   process.exit(1);
 }
 

@@ -40,11 +40,25 @@ facts:
   quickstart:
     statement: Mostra os comandos de início rápido.
     match:
-      allOf: ["cp .env.example .env", "docker compose up -d", "bun install", "bun run db:push", "bun run crawl"]
+      allOf:
+        [
+          "cp .env.example .env",
+          "docker compose up -d",
+          "bun install",
+          "bun run db:push",
+          "bun run crawl",
+        ]
   project_commands:
     statement: Lista comandos operacionais principais.
     match:
-      allOf: ["bun run status", "bun run classify", "bun run backup", "bun run restore-drill", "bun run typecheck"]
+      allOf:
+        [
+          "bun run status",
+          "bun run classify",
+          "bun run backup",
+          "bun run restore-drill",
+          "bun run typecheck",
+        ]
   crawl_year_month:
     statement: Mostra filtros de ano e mês, incluindo ranges e listas.
     match:
@@ -69,7 +83,12 @@ facts:
   docker_usage:
     statement: Mostra build, run e docker exec para crawler.
     match:
-      allOf: ["docker build -t fipe-crawler .", "docker run -d --name fipe --env-file .env fipe-crawler", "docker exec fipe bun src/index.ts crawl"]
+      allOf:
+        [
+          "docker build -t fipe-crawler .",
+          "docker run -d --name fipe --env-file .env fipe-crawler",
+          "docker exec fipe bun src/index.ts crawl",
+        ]
   config_env:
     statement: Nomeia variáveis principais de banco e rate limit.
     match:

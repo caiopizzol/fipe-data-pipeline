@@ -1,14 +1,14 @@
-import cliProgress from 'cli-progress';
-import { classifySingleModel } from '../classifier/segment-classifier.js';
-import * as repo from '../db/repository.js';
-import { fipeClient } from '../fipe/client.js';
-import { parseReferenceMonth } from './reference.js';
+import cliProgress from "cli-progress";
+import { classifySingleModel } from "../classifier/segment-classifier.js";
+import * as repo from "../db/repository.js";
+import { fipeClient } from "../fipe/client.js";
+import { parseReferenceMonth } from "./reference.js";
 
-export { parseReferenceMonth } from './reference.js';
+export { parseReferenceMonth } from "./reference.js";
 
 function parseYearValue(value: string): { year: number; fuelCode: number } {
   // Format: "2020-1" (year-fuelCode)
-  const [yearStr, fuelCodeStr] = value.split('-');
+  const [yearStr, fuelCodeStr] = value.split("-");
   return {
     year: Number.parseInt(yearStr, 10),
     fuelCode: Number.parseInt(fuelCodeStr, 10),
@@ -17,7 +17,7 @@ function parseYearValue(value: string): { year: number; fuelCode: number } {
 
 function parsePrice(valor: string): string {
   // "R$ 4.147,00" -> "4147.00"
-  return valor.replace('R$ ', '').replace(/\./g, '').replace(',', '.');
+  return valor.replace("R$ ", "").replace(/\./g, "").replace(",", ".");
 }
 
 interface CrawlOptions {
@@ -35,7 +35,7 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
   const log = options.onProgress ?? console.log;
 
   // Get reference tables from API
-  log('Fetching reference tables...');
+  log("Fetching reference tables...");
   const allRefs = await fipeClient.getReferenceTables();
 
   // Filter to specific reference, year/month, or default to current year
@@ -52,7 +52,7 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
       });
 
   if (refs.length === 0) {
-    log('No reference tables found to process');
+    log("No reference tables found to process");
     return;
   }
 
@@ -69,12 +69,12 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
 
     // Clear crawl status if --force
     if (options.force) {
-      log('  Force mode: clearing crawl status...');
+      log("  Force mode: clearing crawl status...");
       await repo.clearCrawlStatus(refRecord.id);
     }
 
     // Phase 1: Crawl brands (always fetch - cheap API call)
-    log('  Phase 1: Crawling brands...');
+    log("  Phase 1: Crawling brands...");
     const apiBrands = await fipeClient.getBrands(ref.Codigo);
     const filteredBrands = options.brandCodes
       ? apiBrands.filter((b) => options.brandCodes?.includes(b.Value))
@@ -110,7 +110,7 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
             if (isNew && options.classify) {
               const segment = await classifySingleModel(brand.name, m.Label);
               if (segment) {
-                await repo.updateModelSegment(modelRecord.id, segment, 'ai');
+                await repo.updateModelSegment(modelRecord.id, segment, "ai");
                 log(`      Classified ${m.Label} as ${segment}`);
               }
             }
@@ -126,7 +126,7 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
         }
       }
     } else {
-      log('  Phase 2: Models already crawled');
+      log("  Phase 2: Models already crawled");
     }
 
     // Phase 3: Crawl model-years for each uncrawled model
@@ -135,12 +135,12 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
       log(`  Phase 3: Crawling years for ${uncrawledModels.length} models...`);
 
       const bar = new cliProgress.SingleBar({
-        format: '    [{bar}] {value}/{total} | {model}',
-        barCompleteChar: '█',
-        barIncompleteChar: '░',
+        format: "    [{bar}] {value}/{total} | {model}",
+        barCompleteChar: "█",
+        barIncompleteChar: "░",
         hideCursor: true,
       });
-      bar.start(uncrawledModels.length, 0, { model: '' });
+      bar.start(uncrawledModels.length, 0, { model: "" });
 
       for (const model of uncrawledModels) {
         bar.update({ model: model.name.slice(0, 30) });
@@ -173,7 +173,7 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
 
       bar.stop();
     } else {
-      log('  Phase 3: Model-years already crawled');
+      log("  Phase 3: Model-years already crawled");
     }
 
     // Phase 4: Fetch prices for each uncrawled model-year
@@ -182,9 +182,9 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
       log(`  Phase 4: Fetching ${uncrawledModelYears.length} prices...`);
 
       const bar = new cliProgress.SingleBar({
-        format: '    [{bar}] {value}/{total} prices',
-        barCompleteChar: '█',
-        barIncompleteChar: '░',
+        format: "    [{bar}] {value}/{total} prices",
+        barCompleteChar: "█",
+        barIncompleteChar: "░",
         hideCursor: true,
       });
       bar.start(uncrawledModelYears.length, 0);
@@ -220,7 +220,7 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
       bar.stop();
       log(`    Fetched ${refPrices} prices`);
     } else {
-      log('  Phase 4: All prices already crawled');
+      log("  Phase 4: All prices already crawled");
     }
 
     const backlog = await repo.getCrawlBacklog(refRecord.id);
@@ -242,7 +242,7 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
   }
 
   if (totalPrices > 0) {
-    log('\nRefreshing latest prices view...');
+    log("\nRefreshing latest prices view...");
     await repo.refreshLatestPrices();
   }
 
@@ -252,7 +252,7 @@ export async function crawl(options: CrawlOptions = {}): Promise<void> {
 
 export async function status(): Promise<void> {
   const stats = await repo.getStats();
-  console.log('\nDatabase status:');
+  console.log("\nDatabase status:");
   console.log(`  References: ${stats.references}`);
   console.log(`  Brands: ${stats.brands}`);
   console.log(`  Models: ${stats.models}`);

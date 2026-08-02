@@ -1,4 +1,4 @@
-import { env } from '../config.js';
+import { env } from "../config.js";
 import {
   brandsSchema,
   fipeErrorSchema,
@@ -6,10 +6,10 @@ import {
   priceSchema,
   referenceTablesSchema,
   yearsSchema,
-} from './schemas.js';
-import type { Brand, ModelsResponse, Price, PriceParams, ReferenceTable, Year } from './types.js';
+} from "./schemas.js";
+import type { Brand, ModelsResponse, Price, PriceParams, ReferenceTable, Year } from "./types.js";
 
-const BASE_URL = 'https://veiculos.fipe.org.br/api/veiculos';
+const BASE_URL = "https://veiculos.fipe.org.br/api/veiculos";
 const VEHICLE_TYPE_CAR = 1;
 
 async function sleep(ms: number): Promise<void> {
@@ -74,9 +74,9 @@ export class FipeClient {
     let response: Response;
     try {
       response = await fetch(`${BASE_URL}/${endpoint}`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
         ...(env.FIPE_PROXY ? { proxy: env.FIPE_PROXY } : {}),
@@ -85,7 +85,7 @@ export class FipeClient {
       if (retries > 0) {
         const waitTime = this.calculateBackoff(attempt);
         console.log(
-          `Network error (${error instanceof Error ? error.message : error}), waiting ${waitTime}ms before retry (${retries} retries left)`,
+          `Network error (${error instanceof Error ? error.message : String(error)}), waiting ${waitTime}ms before retry (${retries} retries left)`,
         );
         await sleep(waitTime);
         return this.request(endpoint, body, retries - 1, attempt + 1);
@@ -98,7 +98,7 @@ export class FipeClient {
         this.increaseThrottle();
 
         // Check for Retry-After header
-        const retryAfter = response.headers.get('Retry-After');
+        const retryAfter = response.headers.get("Retry-After");
         const waitTime = retryAfter
           ? Number.parseInt(retryAfter, 10) * 1000
           : this.calculateBackoff(attempt, true);
@@ -136,12 +136,12 @@ export class FipeClient {
   }
 
   async getReferenceTables(): Promise<ReferenceTable[]> {
-    const data = await this.request<unknown>('ConsultarTabelaDeReferencia', {});
+    const data = await this.request<unknown>("ConsultarTabelaDeReferencia", {});
     return referenceTablesSchema.parse(data);
   }
 
   async getBrands(referenceCode: number): Promise<Brand[]> {
-    const data = await this.request<unknown>('ConsultarMarcas', {
+    const data = await this.request<unknown>("ConsultarMarcas", {
       codigoTipoVeiculo: VEHICLE_TYPE_CAR,
       codigoTabelaReferencia: referenceCode,
     });
@@ -149,7 +149,7 @@ export class FipeClient {
   }
 
   async getModels(referenceCode: number, brandCode: string): Promise<ModelsResponse> {
-    const data = await this.request<unknown>('ConsultarModelos', {
+    const data = await this.request<unknown>("ConsultarModelos", {
       codigoTipoVeiculo: VEHICLE_TYPE_CAR,
       codigoTabelaReferencia: referenceCode,
       codigoMarca: brandCode,
@@ -158,7 +158,7 @@ export class FipeClient {
   }
 
   async getYears(referenceCode: number, brandCode: string, modelCode: string): Promise<Year[]> {
-    const data = await this.request<unknown>('ConsultarAnoModelo', {
+    const data = await this.request<unknown>("ConsultarAnoModelo", {
       codigoTipoVeiculo: VEHICLE_TYPE_CAR,
       codigoTabelaReferencia: referenceCode,
       codigoMarca: brandCode,
@@ -168,14 +168,14 @@ export class FipeClient {
   }
 
   async getPrice(params: PriceParams): Promise<Price> {
-    const data = await this.request<unknown>('ConsultarValorComTodosParametros', {
+    const data = await this.request<unknown>("ConsultarValorComTodosParametros", {
       codigoTipoVeiculo: VEHICLE_TYPE_CAR,
       codigoTabelaReferencia: params.referenceCode,
       codigoMarca: params.brandCode,
       codigoModelo: params.modelCode,
       anoModelo: params.year,
       codigoTipoCombustivel: params.fuelCode,
-      tipoConsulta: 'tradicional',
+      tipoConsulta: "tradicional",
     });
     return priceSchema.parse(data);
   }
