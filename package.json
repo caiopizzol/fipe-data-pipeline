@@ -9,6 +9,7 @@
     "backup": "bun src/index.ts backup",
     "restore-drill": "bun src/index.ts restore-drill",
     "test": "bun test",
+    "check": "bun run format:check && bun run lint && bun run typecheck && bun test",
     "db:push": "drizzle-kit push",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",

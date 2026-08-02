@@ -42,6 +42,8 @@ bun run classify       # Classificar modelos via AI
 bun src/index.ts refresh --backup # Publicar novas tabelas completas e fazer backup
 bun run backup         # Backup (pg_dump) para storage S3/R2 com retenção
 bun run restore-drill  # Restaura o último backup num banco temporário e valida
+bun run test           # Executar testes
+bun run check          # Verificar formatação, lint, tipos e testes
 bun run lint           # Verificar código
 bun run format         # Formatar código
 bun run typecheck      # Verificar tipos
