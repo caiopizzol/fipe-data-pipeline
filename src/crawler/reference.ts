@@ -19,7 +19,7 @@ export function parseReferenceMonth(mes: string): ReferenceMonth {
     dezembro: 12,
   };
 
-  const [monthName, yearStr] = mes.trim().toLowerCase().split('/');
+  const [monthName, yearStr] = mes.trim().toLowerCase().split("/");
   return {
     month: months[monthName] || 0,
     year: Number.parseInt(yearStr, 10),

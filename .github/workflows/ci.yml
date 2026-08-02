@@ -16,7 +16,7 @@ jobs:
         uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: bunx --package vite-plus@0.2.7 vp install --frozen-lockfile
 
       - name: Check
         run: bun run check

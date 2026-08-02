@@ -1,8 +1,8 @@
-import type { CrawlBacklog } from '../db/repository.js';
-import type { ReferenceTable } from '../fipe/types.js';
-import { parseReferenceMonth } from './reference.js';
+import type { CrawlBacklog } from "../db/repository.js";
+import type { ReferenceTable } from "../fipe/types.js";
+import { parseReferenceMonth } from "./reference.js";
 
-const REFRESH_LOCK_KEY = 'fipe_refresh';
+const REFRESH_LOCK_KEY = "fipe_refresh";
 
 export interface ReferenceCursor {
   month: number;
@@ -111,14 +111,14 @@ function errorMessage(error: unknown): string {
 
 async function pingHealthcheck(
   healthcheckUrl: string | undefined,
-  event: 'start' | 'success' | 'fail',
+  event: "start" | "success" | "fail",
 ): Promise<void> {
   if (!healthcheckUrl) return;
 
   const url =
-    event === 'start'
+    event === "start"
       ? `${healthcheckUrl}/start`
-      : event === 'fail'
+      : event === "fail"
         ? `${healthcheckUrl}/fail`
         : healthcheckUrl;
 
@@ -130,7 +130,7 @@ async function pingHealthcheck(
 }
 
 async function acquireRefreshLock(): Promise<RefreshLock | undefined> {
-  const { postgresClient } = await import('../db/connection.js');
+  const { postgresClient } = await import("../db/connection.js");
   const reservedSql = await postgresClient.reserve();
 
   try {
@@ -140,7 +140,7 @@ async function acquireRefreshLock(): Promise<RefreshLock | undefined> {
     `;
 
     if (lock?.acquired !== true) {
-      await reservedSql.release();
+      reservedSql.release();
       return undefined;
     }
 
@@ -151,12 +151,12 @@ async function acquireRefreshLock(): Promise<RefreshLock | undefined> {
             SELECT pg_advisory_unlock(hashtext(${REFRESH_LOCK_KEY}))
           `;
         } finally {
-          await reservedSql.release();
+          reservedSql.release();
         }
       },
     };
   } catch (error) {
-    await reservedSql.release();
+    reservedSql.release();
     throw error;
   }
 }
@@ -224,37 +224,37 @@ export async function runRefresh(options: RefreshOptions = {}): Promise<RefreshE
   let exitCode: RefreshExitCode = 1;
 
   try {
-    const { env } = await import('../config.js');
+    const { env } = await import("../config.js");
     healthcheckUrl = env.HC_REFRESH_URL;
 
     lock = await acquireRefreshLock();
     if (!lock) {
-      log('[refresh] refresh is already running');
+      log("[refresh] refresh is already running");
       exitCode = 0;
       return exitCode;
     }
 
-    await pingHealthcheck(healthcheckUrl, 'start');
+    await pingHealthcheck(healthcheckUrl, "start");
 
     const [{ fipeClient }, repo, { crawl }] = await Promise.all([
-      import('../fipe/client.js'),
-      import('../db/repository.js'),
-      import('./processor.js'),
+      import("../fipe/client.js"),
+      import("../db/repository.js"),
+      import("./processor.js"),
     ]);
 
-    log('[refresh] fetching official reference tables');
+    log("[refresh] fetching official reference tables");
     const officialReferences = await fipeClient.getReferenceTables();
     const latestPublished = await repo.getLatestPublishedReference();
     const targets = selectTargetReferences(officialReferences, latestPublished);
     const runBackup: RunBackup = async () => {
-      const backupModule = await import('../backup.js');
+      const backupModule = await import("../backup.js");
       await backupModule.runBackup();
     };
 
     await completePendingPublicationSideEffects(repo, options.backup === true, runBackup, log);
 
     if (targets.length === 0) {
-      log('[refresh] nothing new');
+      log("[refresh] nothing new");
       exitCode = 0;
       return exitCode;
     }
@@ -331,7 +331,7 @@ export async function runRefresh(options: RefreshOptions = {}): Promise<RefreshE
     // pings would mask a wedged refresh from the healthcheck's missed-ping
     // alerting. Failures ping even without the lock (e.g. DB unreachable).
     if (lock || exitCode !== 0) {
-      await pingHealthcheck(healthcheckUrl, exitCode === 0 ? 'success' : 'fail');
+      await pingHealthcheck(healthcheckUrl, exitCode === 0 ? "success" : "fail");
     }
   }
 }

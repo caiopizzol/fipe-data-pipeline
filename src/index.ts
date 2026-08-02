@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-import { Command } from 'commander';
-import { runBackup, runRestoreDrill } from './backup.js';
-import { classifyModels } from './classifier/segment-classifier.js';
-import { crawl, status } from './crawler/processor.js';
-import { runRefresh } from './crawler/refresh.js';
-import { closeConnection } from './db/connection.js';
-import { getModelsWithoutSegment, updateModelSegment } from './db/repository.js';
+import { Command } from "commander";
+import { runBackup, runRestoreDrill } from "./backup.js";
+import { classifyModels } from "./classifier/segment-classifier.js";
+import { crawl, status } from "./crawler/processor.js";
+import { runRefresh } from "./crawler/refresh.js";
+import { closeConnection } from "./db/connection.js";
+import { getModelsWithoutSegment, updateModelSegment } from "./db/repository.js";
 
 const program = new Command();
 
@@ -15,9 +15,9 @@ const program = new Command();
  */
 function parseNumberList(value: string): number[] {
   const results: number[] = [];
-  for (const part of value.split(',')) {
-    if (part.includes('-')) {
-      const [start, end] = part.split('-').map((v) => Number.parseInt(v.trim(), 10));
+  for (const part of value.split(",")) {
+    if (part.includes("-")) {
+      const [start, end] = part.split("-").map((v) => Number.parseInt(v.trim(), 10));
       for (let i = start; i <= end; i++) {
         results.push(i);
       }
@@ -32,7 +32,7 @@ function parseCommaSeparated(value: string): string[] {
   return [
     ...new Set(
       value
-        .split(',')
+        .split(",")
         .map((v) => v.trim())
         .filter(Boolean),
     ),
@@ -44,15 +44,15 @@ function markCommandFailed(): void {
 }
 
 program
-  .command('crawl')
-  .description('Crawl FIPE data and store in database')
-  .option('-r, --reference <code>', 'Specific reference table code')
-  .option('-y, --year <year>', 'Year(s) to crawl (e.g., 2023, 2020-2023, or 2020,2022,2023)')
-  .option('-M, --month <month>', 'Month(s) to crawl (e.g., 6, 1-6, or 1,3,6)')
-  .option('-b, --brand <codes>', 'Brand code(s), comma-separated')
-  .option('-m, --model <codes>', 'Model code(s), comma-separated (requires --brand)')
-  .option('-c, --classify', 'Classify new models by segment using AI')
-  .option('-f, --force', 'Re-fetch all data, ignoring sync status')
+  .command("crawl")
+  .description("Crawl FIPE data and store in database")
+  .option("-r, --reference <code>", "Specific reference table code")
+  .option("-y, --year <year>", "Year(s) to crawl (e.g., 2023, 2020-2023, or 2020,2022,2023)")
+  .option("-M, --month <month>", "Month(s) to crawl (e.g., 6, 1-6, or 1,3,6)")
+  .option("-b, --brand <codes>", "Brand code(s), comma-separated")
+  .option("-m, --model <codes>", "Model code(s), comma-separated (requires --brand)")
+  .option("-c, --classify", "Classify new models by segment using AI")
+  .option("-f, --force", "Re-fetch all data, ignoring sync status")
   .action(async (options) => {
     try {
       await crawl({
@@ -65,41 +65,41 @@ program
         force: options.force,
       });
     } catch (err) {
-      console.error('Crawl failed:', err);
+      console.error("Crawl failed:", err);
       markCommandFailed();
     }
   });
 
 program
-  .command('status')
-  .description('Show database statistics')
+  .command("status")
+  .description("Show database statistics")
   .action(async () => {
     try {
       await status();
     } catch (err) {
-      console.error('Status failed:', err);
+      console.error("Status failed:", err);
       markCommandFailed();
     }
   });
 
 program
-  .command('classify')
-  .description('Classify models by segment using AI')
-  .option('-n, --dry-run', 'Show what would be classified without making changes')
+  .command("classify")
+  .description("Classify models by segment using AI")
+  .option("-n, --dry-run", "Show what would be classified without making changes")
   .action(async (options) => {
     try {
       // Batch classification
       const modelsToClassify = await getModelsWithoutSegment();
 
       if (modelsToClassify.length === 0) {
-        console.log('All models are already classified.');
+        console.log("All models are already classified.");
         return;
       }
 
       console.log(`Found ${modelsToClassify.length} models without segment.`);
 
       if (options.dryRun) {
-        console.log('\nDry run - would classify:');
+        console.log("\nDry run - would classify:");
         for (const model of modelsToClassify.slice(0, 20)) {
           console.log(`  - ${model.brandName} ${model.modelName}`);
         }
@@ -109,7 +109,7 @@ program
         return;
       }
 
-      console.log('\nClassifying models...');
+      console.log("\nClassifying models...");
       const results = await classifyModels(modelsToClassify);
 
       let classified = 0;
@@ -117,7 +117,7 @@ program
 
       for (const result of results) {
         if (result.segment) {
-          await updateModelSegment(result.id, result.segment, 'ai');
+          await updateModelSegment(result.id, result.segment, "ai");
           classified++;
         } else {
           failed++;
@@ -126,15 +126,15 @@ program
 
       console.log(`\nDone! Classified: ${classified}, Failed: ${failed}`);
     } catch (err) {
-      console.error('Classification failed:', err);
+      console.error("Classification failed:", err);
       markCommandFailed();
     }
   });
 
 program
-  .command('refresh')
-  .description('Crawl and publish new complete FIPE reference tables')
-  .option('--backup', 'Run backup after publishing at least one reference')
+  .command("refresh")
+  .description("Crawl and publish new complete FIPE reference tables")
+  .option("--backup", "Run backup after publishing at least one reference")
   .action(async (options: { backup?: boolean }) => {
     const exitCode = await runRefresh({ backup: options.backup === true });
     if (exitCode !== 0) {
@@ -143,25 +143,25 @@ program
   });
 
 program
-  .command('backup')
-  .description('pg_dump the database and upload to R2 with retention')
+  .command("backup")
+  .description("pg_dump the database and upload to R2 with retention")
   .action(async () => {
     try {
       await runBackup();
     } catch (err) {
-      console.error('Backup failed:', err);
+      console.error("Backup failed:", err);
       markCommandFailed();
     }
   });
 
 program
-  .command('restore-drill')
-  .description('Download the latest R2 backup and verify it restores into a scratch database')
+  .command("restore-drill")
+  .description("Download the latest R2 backup and verify it restores into a scratch database")
   .action(async () => {
     try {
       await runRestoreDrill();
     } catch (err) {
-      console.error('Restore drill failed:', err);
+      console.error("Restore drill failed:", err);
       markCommandFailed();
     }
   });
@@ -175,6 +175,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error('Command failed:', err);
+  console.error("Command failed:", err);
   markCommandFailed();
 });

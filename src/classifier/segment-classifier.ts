@@ -1,11 +1,11 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { env } from '../config.js';
-import { SEGMENTS, type Segment } from '../db/schema.js';
+import Anthropic from "@anthropic-ai/sdk";
+import { env } from "../config.js";
+import { SEGMENTS, type Segment } from "../db/schema.js";
 
 const SYSTEM_PROMPT = `You are a Brazilian vehicle classification expert. Your task is to classify car models into segments based on their brand and model name.
 
 Available segments (use EXACTLY these values):
-${SEGMENTS.map((s) => `- ${s}`).join('\n')}
+${SEGMENTS.map((s) => `- ${s}`).join("\n")}
 
 Rules:
 - Respond with ONLY the segment name, nothing else
@@ -27,7 +27,7 @@ type ClassificationResult = {
 
 export async function classifyModels(models: ModelInput[]): Promise<ClassificationResult[]> {
   if (!env.ANTHROPIC_API_KEY) {
-    console.warn('ANTHROPIC_API_KEY not set, skipping classification');
+    console.warn("ANTHROPIC_API_KEY not set, skipping classification");
     return models.map((m) => ({ id: m.id, segment: null }));
   }
 
@@ -42,32 +42,32 @@ export async function classifyModels(models: ModelInput[]): Promise<Classificati
 
     const prompt = batch
       .map((m, idx) => `${idx + 1}. Brand: ${m.brandName}, Model: ${m.modelName}`)
-      .join('\n');
+      .join("\n");
 
     try {
       const response = await client.messages.create({
-        model: 'claude-sonnet-4-5',
+        model: "claude-sonnet-4-5",
         max_tokens: 1024,
         system: SYSTEM_PROMPT,
         messages: [
           {
-            role: 'user',
+            role: "user",
             content: `Classify each vehicle. Respond with one segment per line, numbered to match:\n\n${prompt}`,
           },
         ],
       });
 
       const content = response.content[0];
-      if (content.type !== 'text') {
-        throw new Error('Unexpected response type');
+      if (content.type !== "text") {
+        throw new Error("Unexpected response type");
       }
 
-      const lines = content.text.trim().split('\n');
+      const lines = content.text.trim().split("\n");
 
       for (let j = 0; j < batch.length; j++) {
-        const line = lines[j] || '';
+        const line = lines[j] || "";
         // Extract segment from response (handle numbered format like "1. SUV")
-        const segmentMatch = line.replace(/^\d+\.\s*/, '').trim();
+        const segmentMatch = line.replace(/^\d+\.\s*/, "").trim();
         const segment = SEGMENTS.find((s) => s.toLowerCase() === segmentMatch.toLowerCase());
 
         results.push({
@@ -103,7 +103,7 @@ export async function classifySingleModel(
   modelName: string,
 ): Promise<Segment | null> {
   if (!env.ANTHROPIC_API_KEY) {
-    console.warn('ANTHROPIC_API_KEY not set, skipping classification');
+    console.warn("ANTHROPIC_API_KEY not set, skipping classification");
     return null;
   }
 
@@ -111,19 +111,19 @@ export async function classifySingleModel(
 
   try {
     const response = await client.messages.create({
-      model: 'claude-sonnet-4-5',
+      model: "claude-sonnet-4-5",
       max_tokens: 50,
       system: SYSTEM_PROMPT,
       messages: [
         {
-          role: 'user',
+          role: "user",
           content: `Classify: Brand: ${brandName}, Model: ${modelName}`,
         },
       ],
     });
 
     const content = response.content[0];
-    if (content.type !== 'text') {
+    if (content.type !== "text") {
       return null;
     }
 
