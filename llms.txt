@@ -23,6 +23,8 @@ bun run status
 bun run classify
 bun run backup
 bun run restore-drill
+bun run test
+bun run check
 bun run lint
 bun run format
 bun run typecheck
