@@ -17,12 +17,12 @@ motorcycles and trucks as part of FIPE's coverage, but this pipeline doesn't col
 
 Commands below run with `bun src/index.ts <command>`.
 
-| Capability                                                                                                   | Commands                                   | Main code                                                                                                | Existing checks                                                                                                                                   |
-| ------------------------------------------------------------------------------------------------------------ | ------------------------------------------ | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Collect price history with date, reference, brand, and model filters. Resume saved progress and show totals. | `crawl`, `status`                          | [Crawler](src/crawler/processor.ts), [FIPE client](src/fipe/client.ts), [database](src/db/repository.ts) | [Month parsing test](src/crawler/reference.test.ts). No full crawl or database test; `status` shows counts, not completeness.                     |
-| Publish new months in order and retry unfinished view updates and backups.                                   | `refresh [--backup]`                       | [Refresh](src/crawler/refresh.ts), [database](src/db/repository.ts), [SQL](initial.sql)                  | [Refresh tests](src/crawler/refresh.test.ts) cover publication rules and retries with a fake database layer.                                      |
-| Add optional AI segment labels to models.                                                                    | `classify [--dry-run]`, `crawl --classify` | [Classifier](src/classifier/segment-classifier.ts), [CLI](src/index.ts)                                  | Dry run lists candidates without calling AI or saving labels. No automated accuracy tests.                                                        |
-| Save database backups to S3-compatible storage and check they restore.                                       | `backup`, `restore-drill`                  | [Backup](src/backup.ts)                                                                                  | Restore drill loads the latest daily backup into a scratch database and checks that `prices` has rows. Requires live database and storage access. |
+| Capability                                                                                                   | Commands                                   | Main code                                                                                                | Existing checks                                                                                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------ | ------------------------------------------ | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Collect price history with date, reference, brand, and model filters. Resume saved progress and show totals. | `crawl`, `status`                          | [Crawler](src/crawler/processor.ts), [FIPE client](src/fipe/client.ts), [database](src/db/repository.ts) | [Month parsing test](src/crawler/reference.test.ts). No full crawl test; `status` shows counts, not completeness.                                                                               |
+| Publish new months in order and retry unfinished view updates and backups.                                   | `refresh [--backup]`                       | [Refresh](src/crawler/refresh.ts), [database](src/db/repository.ts), [SQL](initial.sql)                  | [Refresh tests](src/crawler/refresh.test.ts) cover rules and retries. [SQL tests](src/db/latest-prices.test.ts) check published-only prices in PostgreSQL for the initial schema and migration. |
+| Add optional AI segment labels to models.                                                                    | `classify [--dry-run]`, `crawl --classify` | [Classifier](src/classifier/segment-classifier.ts), [CLI](src/index.ts)                                  | Dry run lists candidates without calling AI or saving labels. No automated accuracy tests.                                                                                                      |
+| Save database backups to S3-compatible storage and check they restore.                                       | `backup`, `restore-drill`                  | [Backup](src/backup.ts)                                                                                  | Restore drill loads the latest daily backup into a scratch database and checks that `prices` has rows. Requires live database and storage access.                                               |
 
 ## How publishing works
 
@@ -42,7 +42,7 @@ The data shape lives in [initial.sql](initial.sql), [schema.ts](src/db/schema.ts
 
 ## Checking changes
 
-Run `bun run check` for formatting, lint, types, and unit tests. These checks don't replace live
-checks of crawling, database locks,
-`latest_prices`, AI output, or backups. The restore drill is available for operators; this map
-doesn't claim it has been run.
+Run `bun run check` for formatting, lint, types, and tests. Docker must be running for the isolated
+PostgreSQL test. It checks `latest_prices` before and after publication using the tracked SQL.
+Live crawling, database locks, AI output, and backups still need separate checks. The restore drill
+is available for operators; this map doesn't claim it has been run.
