@@ -9,6 +9,12 @@ PostgreSQL. É o pipeline de dados do [fipe.chat](https://fipe.chat).
 
 Hoje, a coleta usa o tipo 1 da FIPE (carros). Motos e caminhões não estão incluídos.
 
+<p align="center">
+  <a href="https://github.com/caiopizzol/fipe-data-pipeline/releases"><img src="https://img.shields.io/github/v/release/caiopizzol/fipe-data-pipeline" alt="Release"></a>
+  <a href="https://bun.sh"><img src="https://img.shields.io/badge/bun-1.x-f472b6" alt="Bun"></a>
+  <a href="https://vite.plus"><img src="https://img.shields.io/badge/Vite%2B-tooling-646cff" alt="Vite+"></a>
+</p>
+
 ## Começar
 
 Com [Bun](https://bun.sh) e Docker instalados, crie um banco local vazio:
