@@ -128,3 +128,7 @@ bun run format      # formatar com Vite+
 
 Também há `bun run lint` e `bun run typecheck`. Veja [initial.sql](initial.sql) para o schema e
 [FEATURE_MAP.md](FEATURE_MAP.md) para repetir a prévia de classificação em um banco temporário.
+
+## Contribuidores
+
+<a href="https://github.com/caiopizzol"><img src="https://github.com/caiopizzol.png" width="50" height="50" alt="caiopizzol" title="Caio Pizzol" /></a>
