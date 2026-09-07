@@ -106,21 +106,17 @@ docker exec fipe bun src/index.ts status
 `DATABASE_URL` deve ser acessível pelo container; `localhost` aponta para ele mesmo.
 A imagem aguarda comandos e não inicia a coleta sozinha.
 
-## Agendar no Moor
+## Agendar atualizações
 
-Para tentar a atualização nos dias 1 a 10, às 07:30 no fuso do agendador:
+Use cron ou o agendador do seu ambiente para executar `bun src/index.ts refresh` na raiz do projeto,
+com as variáveis de ambiente configuradas. Adicione `--backup` se usar R2/S3.
 
-```cron
-30 7 1-10 * * setsid nohup bun src/index.ts refresh --backup >/proc/1/fd/1 2>&1 </dev/null &
-```
+A coleta pode levar horas. Configure o tempo limite do job para permitir sua conclusão e acompanhe
+os logs. Execuções sobrepostas de `refresh` são ignoradas enquanto outra estiver ativa.
 
-O processo roda separado para evitar o limite de 10 minutos do exec do Moor. O cron retorna logo;
-acompanhe o resultado pelos logs, Healthchecks e campos `published_at`, `latest_prices_refreshed_at`
-e `backup_completed_at`.
-
-Com `HC_REFRESH_URL`, o refresh envia `/start` ao obter a trava, a URL base no sucesso e `/fail`
-na falha. Uma execução que encontra outro refresh ativo não envia ping. Falhas no Healthchecks não
-interrompem o job. Use uma tolerância de pelo menos 36 horas para coletas longas.
+Para monitorar o job, configure `HC_REFRESH_URL`: ele envia `/start` ao começar, a URL base no
+sucesso e `/fail` na falha. Uma execução ignorada não envia ping. Falhas no monitoramento não
+interrompem a coleta. Ajuste a tolerância do alerta para coletas longas (pelo menos 36 horas).
 
 ## Desenvolver
 
