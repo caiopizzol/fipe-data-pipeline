@@ -2,12 +2,13 @@
   <img src="https://fipe.chat/favicon.svg" width="80" height="80" alt="fipe.chat">
 </p>
 
-# FIPE Data Pipeline
+<h1 align="center">FIPE Data Pipeline</h1>
 
-Coleta preços históricos de carros da [Tabela FIPE](https://veiculos.fipe.org.br) e salva no
-PostgreSQL. É o pipeline de dados do [fipe.chat](https://fipe.chat).
-
-Hoje, a coleta usa o tipo 1 da FIPE (carros). Motos e caminhões não estão incluídos.
+<p align="center">
+  Coleta e processa dados históricos de preços de veículos da Tabela FIPE para PostgreSQL.
+  <br>
+  Parte do <a href="https://fipe.chat">fipe.chat</a> — os dados que a FIPE tem, a clareza que ela nunca deu.
+</p>
 
 <p align="center">
   <a href="https://github.com/caiopizzol/fipe-data-pipeline/releases"><img src="https://img.shields.io/github/v/release/caiopizzol/fipe-data-pipeline" alt="Release"></a>
@@ -32,6 +33,8 @@ bun run status
 veja [migrations/](migrations/). `bun run db:push` atualiza tabelas, mas não cria a view.
 
 ## Coletar dados
+
+Hoje, a coleta usa o tipo 1 da FIPE (carros). Motos e caminhões não estão incluídos.
 
 ```sh
 bun run crawl                                              # ano atual
