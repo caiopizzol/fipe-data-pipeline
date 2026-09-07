@@ -67,17 +67,12 @@ Falhas na coleta ou validação retornam código 1 sem publicar o mês. A próxi
 o trabalho, incluindo a view e backups pendentes (`--backup`). Outro refresh ativo causa uma saída
 com código 0. Essa trava não bloqueia um `crawl` separado.
 
-## Classificar e fazer backup
+## Fazer backup
 
 ```sh
-bun run classify -- --dry-run       # listar modelos sem segmento
-bun run classify                   # classificar esses modelos com IA
-bun run crawl -- --classify         # classificar modelos novos durante a coleta
 bun run backup                     # salvar dump no R2/S3
 bun run restore-drill              # testar a restauração do último dump diário
 ```
-
-A classificação é opcional e usa `ANTHROPIC_API_KEY`. Os rótulos são gerados por IA, não pela FIPE.
 
 O backup mantém 14 dumps diários e 12 mensais, em `daily/` e `monthly/`. O restore drill recria
 `fipe_restore_drill`, restaura o dump, verifica se há preços e remove o banco. Reserve esse nome.
@@ -91,7 +86,6 @@ Defina as variáveis no `.env`. Só `DATABASE_URL` é obrigatória para a coleta
 | `DATABASE_URL`                                                         | Conexão PostgreSQL.                                                                   |
 | `RATE_LIMIT_MS`, `MAX_THROTTLE_MS`, `MAX_RETRIES`                      | Intervalo inicial, limite após throttling e tentativas. Padrões: `800`, `5000` e `3`. |
 | `FIPE_PROXY`                                                           | URL de proxy opcional para a FIPE. Omita se não usar.                                 |
-| `ANTHROPIC_API_KEY`                                                    | Chave para classificação com IA.                                                      |
 | `HC_REFRESH_URL`                                                       | URL opcional do Healthchecks para o refresh.                                          |
 | `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT`, `R2_BUCKET` | Configure todas para backup e restore drill em storage compatível com S3.             |
 
@@ -129,8 +123,7 @@ bun run test        # só testes
 bun run format      # formatar com Vite+
 ```
 
-Também há `bun run lint` e `bun run typecheck`. Veja [initial.sql](initial.sql) para o schema e
-[FEATURE_MAP.md](FEATURE_MAP.md) para repetir a prévia de classificação em um banco temporário.
+Também há `bun run lint` e `bun run typecheck`. Veja [initial.sql](initial.sql) para o schema.
 
 ## Contribuidores
 
