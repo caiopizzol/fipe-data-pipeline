@@ -1,1 +1,1 @@
-vp staged
+test ! -x node_modules/.bin/vp || node_modules/.bin/vp staged
