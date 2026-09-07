@@ -63,6 +63,5 @@ If the database won't start or a later command fails, stop and clean up with
 
 ### Test limits
 
-No automated test runs this route. Help output confirms the flags; [Pickled](pickled.yml) checks a
-related doc example. Neither tests classification. This replay checks the preview and unchanged
-labels, not AI accuracy, saving labels, or the 20-model limit.
+No automated test runs this route. Help output only confirms the flags. This replay checks the
+preview and unchanged labels, not AI accuracy, saving labels, or the 20-model limit.
