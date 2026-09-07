@@ -123,7 +123,32 @@ bun run test        # só testes
 bun run format      # formatar com Vite+
 ```
 
-Também há `bun run lint` e `bun run typecheck`. Veja [initial.sql](initial.sql) para o schema.
+Também há `bun run lint` e `bun run typecheck`.
+
+## Schema
+
+```mermaid
+flowchart LR
+    reference_tables --> prices
+    brands --> models --> model_years --> prices
+```
+
+Schema SQL completo em [`initial.sql`](./initial.sql).
+
+## Fonte de Dados
+
+Estes dados são **públicos e oficiais**, disponibilizados pela Fundação Instituto de Pesquisas Econômicas (FIPE).
+
+|                       |                                                                        |
+| --------------------- | ---------------------------------------------------------------------- |
+| **Fonte**             | [veiculos.fipe.org.br](https://veiculos.fipe.org.br)                   |
+| **Atualização**       | Mensal (desde 2001)                                                    |
+| **Cobertura da FIPE** | Carros, motos, caminhões e utilitários                                 |
+| **Uso**               | Referência para seguros, financiamentos, IPVA e negociação de veículos |
+
+Este pipeline coleta apenas carros (tipo 1 da FIPE).
+
+A Tabela FIPE é a referência de preço médio de veículos mais utilizada no Brasil. Os dados são coletados mensalmente junto a concessionárias, revendedoras e fabricantes em todo o país.
 
 ## Contribuidores
 
