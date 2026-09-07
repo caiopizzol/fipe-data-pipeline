@@ -21,6 +21,10 @@
 - [Bun](https://bun.sh) — `brew install oven-sh/bun/bun`
 - Docker
 
+`bun run test` e `bun run check` exigem Docker em execução. O teste de `latest_prices` cria um
+PostgreSQL 17 temporário e o remove ao terminar, sem usar seu `DATABASE_URL`. Na primeira execução,
+o Docker baixa a imagem `postgres:17-alpine`.
+
 ## Início Rápido
 
 ```bash
