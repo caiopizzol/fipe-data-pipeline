@@ -16,9 +16,14 @@
   <a href="https://vite.plus"><img src="https://img.shields.io/badge/Vite%2B-tooling-646cff" alt="Vite+"></a>
 </p>
 
-## Começar
+## Requisitos
 
-Com [Bun](https://bun.sh) e Docker instalados, crie um banco local vazio:
+- [Bun](https://bun.sh) — executa o pipeline e instala as dependências.
+- [Docker](https://docs.docker.com/get-docker/) — roda o PostgreSQL local.
+
+## Início Rápido
+
+Para criar um banco local vazio:
 
 ```sh
 cp .env.example .env
@@ -32,7 +37,36 @@ bun run status
 `initial.sql` cria tabelas e `latest_prices`; o banco local usa a porta 5433. Para bancos existentes,
 veja [migrations/](migrations/). `bun run db:push` atualiza tabelas, mas não cria a view.
 
-## Coletar dados
+## Via Docker
+
+A imagem inclui os clientes PostgreSQL e AWS necessários para backup. Fora dela, instale `pg_dump`,
+`pg_restore`, `psql` e `aws` para usar esses comandos.
+
+```sh
+docker build -t fipe-crawler .
+docker run -d --name fipe --env-file .env fipe-crawler
+docker exec fipe bun src/index.ts status
+```
+
+`DATABASE_URL` deve ser acessível pelo container; `localhost` aponta para ele mesmo.
+A imagem aguarda comandos e não inicia a coleta sozinha.
+
+## Comandos
+
+```sh
+bun install --frozen-lockfile       # instalar dependências
+bun run crawl                      # coletar dados
+bun run status                     # totais no banco
+bun src/index.ts refresh            # coletar e publicar novos meses
+bun run backup                     # salvar dump no R2/S3
+bun run restore-drill              # testar a restauração
+bun run check                      # formatação, lint, tipos e testes
+bun run format                     # formatar com Vite+
+```
+
+Também há `bun run test`, `bun run lint` e `bun run typecheck`.
+
+## Uso
 
 Hoje, a coleta usa o tipo 1 da FIPE (carros). Motos e caminhões não estão incluídos.
 
@@ -40,7 +74,6 @@ Hoje, a coleta usa o tipo 1 da FIPE (carros). Motos e caminhões não estão inc
 bun run crawl                                              # ano atual
 bun run crawl -- --year 2020-2024 --month 1,6,12            # período
 bun run crawl -- --brand 59 --model 5940 --reference 328    # recorte específico
-bun run status                                             # totais no banco
 ```
 
 `--year` e `--month` aceitam listas e intervalos; `--brand` e `--model`, listas por vírgula.
@@ -49,7 +82,7 @@ bun run status                                             # totais no banco
 A coleta retoma o progresso salvo. `--force` limpa os checkpoints da referência e refaz a coleta.
 `status` mostra totais, não garante completude.
 
-## Publicar novos meses
+### Publicar novos meses
 
 ```sh
 bun src/index.ts refresh
@@ -67,43 +100,7 @@ Falhas na coleta ou validação retornam código 1 sem publicar o mês. A próxi
 o trabalho, incluindo a view e backups pendentes (`--backup`). Outro refresh ativo causa uma saída
 com código 0. Essa trava não bloqueia um `crawl` separado.
 
-## Fazer backup
-
-```sh
-bun run backup                     # salvar dump no R2/S3
-bun run restore-drill              # testar a restauração do último dump diário
-```
-
-O backup mantém 14 dumps diários e 12 mensais, em `daily/` e `monthly/`. O restore drill recria
-`fipe_restore_drill`, restaura o dump, verifica se há preços e remove o banco. Reserve esse nome.
-
-## Configurar
-
-Defina as variáveis no `.env`. Só `DATABASE_URL` é obrigatória para a coleta.
-
-| Variável                                                               | Uso                                                                                   |
-| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                                                         | Conexão PostgreSQL.                                                                   |
-| `RATE_LIMIT_MS`, `MAX_THROTTLE_MS`, `MAX_RETRIES`                      | Intervalo inicial, limite após throttling e tentativas. Padrões: `800`, `5000` e `3`. |
-| `FIPE_PROXY`                                                           | URL de proxy opcional para a FIPE. Omita se não usar.                                 |
-| `HC_REFRESH_URL`                                                       | URL opcional do Healthchecks para o refresh.                                          |
-| `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT`, `R2_BUCKET` | Configure todas para backup e restore drill em storage compatível com S3.             |
-
-## Rodar em Docker
-
-A imagem inclui os clientes PostgreSQL e AWS necessários para backup. Fora dela, instale `pg_dump`,
-`pg_restore`, `psql` e `aws` para usar esses comandos.
-
-```sh
-docker build -t fipe-crawler .
-docker run -d --name fipe --env-file .env fipe-crawler
-docker exec fipe bun src/index.ts status
-```
-
-`DATABASE_URL` deve ser acessível pelo container; `localhost` aponta para ele mesmo.
-A imagem aguarda comandos e não inicia a coleta sozinha.
-
-## Agendar atualizações
+### Atualizações recorrentes
 
 Use cron ou o agendador do seu ambiente para executar `bun src/index.ts refresh` na raiz do projeto,
 com as variáveis de ambiente configuradas. Adicione `--backup` se usar R2/S3.
@@ -115,15 +112,22 @@ Para monitorar o job, configure `HC_REFRESH_URL`: ele envia `/start` ao começar
 sucesso e `/fail` na falha. Uma execução ignorada não envia ping. Falhas no monitoramento não
 interrompem a coleta. Ajuste a tolerância do alerta para coletas longas (pelo menos 36 horas).
 
-## Desenvolver
+### Backup e restauração
 
-```sh
-bun run check       # formatação, lint, tipos e testes
-bun run test        # só testes
-bun run format      # formatar com Vite+
-```
+O backup mantém 14 dumps diários e 12 mensais, em `daily/` e `monthly/`. O restore drill recria
+`fipe_restore_drill`, restaura o dump, verifica se há preços e remove o banco. Reserve esse nome.
 
-Também há `bun run lint` e `bun run typecheck`.
+## Configuração
+
+Defina as variáveis no `.env`. Só `DATABASE_URL` é obrigatória para a coleta.
+
+| Variável                                                               | Uso                                                                                   |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                                                         | Conexão PostgreSQL.                                                                   |
+| `RATE_LIMIT_MS`, `MAX_THROTTLE_MS`, `MAX_RETRIES`                      | Intervalo inicial, limite após throttling e tentativas. Padrões: `800`, `5000` e `3`. |
+| `FIPE_PROXY`                                                           | URL de proxy opcional para a FIPE. Omita se não usar.                                 |
+| `HC_REFRESH_URL`                                                       | URL opcional do Healthchecks para o refresh.                                          |
+| `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT`, `R2_BUCKET` | Configure todas para backup e restore drill em storage compatível com S3.             |
 
 ## Schema
 
