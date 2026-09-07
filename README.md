@@ -21,9 +21,9 @@
 - [Bun](https://bun.sh) — executa o pipeline e instala as dependências.
 - [Docker](https://docs.docker.com/get-docker/) — roda o PostgreSQL local.
 
-`bun run test` e `bun run check` exigem Docker em execução. O teste de `latest_prices` cria um
-PostgreSQL 17 temporário e o remove ao terminar, sem usar seu `DATABASE_URL`. Na primeira execução,
-o Docker baixa a imagem `postgres:17-alpine`.
+`bun run test` e `bun run check` exigem Docker em execução. Os testes de publicação criam bancos
+PostgreSQL 17 temporários e os removem ao terminar, sem usar seu `DATABASE_URL`. O teste de
+`refresh` usa uma porta local livre. Na primeira execução, o Docker baixa `postgres:17-alpine`.
 
 ## Início Rápido
 
