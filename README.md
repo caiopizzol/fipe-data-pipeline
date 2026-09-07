@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://fipe.chat/favicon.svg" width="80" height="80" alt="fipe.chat">
+</p>
+
 # FIPE Data Pipeline
 
 Coleta preços históricos de carros da [Tabela FIPE](https://veiculos.fipe.org.br) e salva no
