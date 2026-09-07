@@ -42,7 +42,7 @@ The data shape lives in [initial.sql](initial.sql), [schema.ts](src/db/schema.ts
 
 ## Checking changes
 
-Run `bun run check` for formatting, lint, types, and unit tests. [Pickled](pickled.yml) checks doc
-examples and defines agent tasks. Neither replaces live checks of crawling, database locks,
+Run `bun run check` for formatting, lint, types, and unit tests. These checks don't replace live
+checks of crawling, database locks,
 `latest_prices`, AI output, or backups. The restore drill is available for operators; this map
 doesn't claim it has been run.
