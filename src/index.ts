@@ -1,6 +1,13 @@
 #!/usr/bin/env bun
 import { Command, Option } from "commander";
 import { version } from "../package.json";
+import { createClassifier } from "./classifier/classify.js";
+import { createBackupCommands } from "./commands/backup.js";
+import { classify } from "./commands/classify.js";
+import { crawl } from "./commands/crawl.js";
+import { runRefresh } from "./commands/refresh.js";
+import { status } from "./commands/status.js";
+import { FipeClient } from "./fipe/client.js";
 import { parseCodes, parseInteger, parseNumberList } from "./cli-options.js";
 import {
   readBackupConfig,
@@ -64,11 +71,7 @@ export function createProgram() {
       if (options.model && !options.brand) program.error("--model requires --brand");
       const config = readCrawlerConfig();
       const apiKey = options.classify ? readClassificationKey() : undefined;
-      const { crawl } = await import("./commands/crawl.js");
-      const { FipeClient } = await import("./fipe/client.js");
-      const classifyModel = apiKey
-        ? (await import("./classifier/classify.js")).createClassifier(apiKey).classifySingleModel
-        : undefined;
+      const classifyModel = apiKey ? createClassifier(apiKey).classifySingleModel : undefined;
       await withDatabase(async (repo) => {
         const result = await crawl(
           {
@@ -97,9 +100,6 @@ export function createProgram() {
       const config = readCrawlerConfig();
       const { HC_REFRESH_URL } = readRefreshConfig();
       const backupConfig = options.backup ? readBackupConfig() : undefined;
-      const { runRefresh } = await import("./commands/refresh.js");
-      const { crawl } = await import("./commands/crawl.js");
-      const { FipeClient } = await import("./fipe/client.js");
       const api = new FipeClient(config);
       await withDatabase(async (repo, connection) => {
         process.exitCode = await runRefresh(
@@ -112,7 +112,6 @@ export function createProgram() {
             crawl: (scope) => connection.withCrawlLock(() => crawl(scope, repo, api)),
             runBackup: async () => {
               if (!backupConfig) throw new Error("Backup configuration is required");
-              const { createBackupCommands } = await import("./commands/backup.js");
               await createBackupCommands(backupConfig).runBackup();
             },
           },
@@ -125,7 +124,6 @@ export function createProgram() {
     .description("Show stored data and reference coverage")
     .option("-r, --reference <code>", "Reference table code", (v) => parseInteger(v))
     .action(async (options) => {
-      const { status } = await import("./commands/status.js");
       await withDatabase((repo) => status(repo, options.reference));
     });
   program
@@ -134,21 +132,18 @@ export function createProgram() {
     .option("-n, --dry-run", "Preview without calling the classification API")
     .action(async (options) => {
       const key = options.dryRun ? "" : readClassificationKey();
-      const { classify } = await import("./commands/classify.js");
       await withDatabase((repo) => classify(repo, Boolean(options.dryRun), key));
     });
   program
     .command("backup")
     .description("Upload a PostgreSQL backup to S3/R2 with retention")
     .action(async () => {
-      const { createBackupCommands } = await import("./commands/backup.js");
       await createBackupCommands(readBackupConfig()).runBackup();
     });
   program
     .command("restore-drill")
     .description("Verify the latest backup in a temporary database")
     .action(async () => {
-      const { createBackupCommands } = await import("./commands/backup.js");
       await createBackupCommands(readBackupConfig()).runRestoreDrill();
     });
   return program;

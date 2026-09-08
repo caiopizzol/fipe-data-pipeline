@@ -55,7 +55,7 @@ export async function crawl(
       }
       for (const brand of brands) {
         const stored = await repo.getOrCreateBrand(brand.Value, brand.Label);
-        await repo.getOrCreateReferenceBrand(record.id, stored.id);
+        await repo.ensureReferenceBrand(record.id, stored.id);
       }
       const pendingBrands = await repo.getUncrawledReferenceBrands(record.id, options);
       const foundModels = new Set<string>();
@@ -72,7 +72,7 @@ export async function crawl(
               code,
               model.Label,
             );
-            await repo.getOrCreateReferenceModel(record.id, stored.id);
+            await repo.ensureReferenceModel(record.id, stored.id);
             if (isNew && classifyModel) {
               try {
                 const segment = await classifyModel(brand.name, model.Label);
@@ -102,7 +102,7 @@ export async function crawl(
               fuelCode,
               value.Label,
             );
-            await repo.getOrCreateReferenceModelYear(record.id, stored.id);
+            await repo.ensureReferenceModelYear(record.id, stored.id);
           }
           await repo.markReferenceModelYearsCrawled(model.id);
         } catch (error) {

@@ -6,22 +6,22 @@
   "type": "module",
   "scripts": {
     "crawl": "bun src/index.ts crawl",
+    "refresh": "bun src/index.ts refresh",
     "status": "bun src/index.ts status",
     "classify": "bun src/index.ts classify",
     "backup": "bun src/index.ts backup",
     "restore-drill": "bun src/index.ts restore-drill",
-    "prepare": "test ! -x node_modules/.bin/vp || vp config --no-agent",
-    "test": "vp test run src && bun run test:integration",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "bun src/db/migrate.ts",
     "check": "vp check && bun run test",
+    "test": "vp test run src && bun run test:integration",
+    "test:integration": "bun scripts/test-integration.ts",
     "lint": "vp lint",
     "lint:fix": "vp lint --fix",
     "format": "vp fmt",
     "format:check": "vp fmt --check",
     "typecheck": "vp check --no-fmt --no-lint",
-    "refresh": "bun src/index.ts refresh",
-    "test:integration": "bun scripts/test-integration.ts",
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "bun src/db/migrate.ts"
+    "prepare": "test ! -x node_modules/.bin/vp || vp config --no-agent"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",

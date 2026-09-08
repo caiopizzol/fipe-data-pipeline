@@ -12,12 +12,6 @@ import {
   referenceTables,
 } from "./schema.js";
 
-export interface CrawlBacklog {
-  uncrawledBrands: number;
-  uncrawledModels: number;
-  uncrawledModelYears: number;
-}
-
 export interface CrawlScope {
   brandCodes?: string[];
   modelCodes?: string[];
@@ -52,43 +46,6 @@ export function createRepository(db: Database) {
       .limit(1);
 
     return reference;
-  }
-  async function getCrawlBacklog(referenceTableId: number): Promise<CrawlBacklog> {
-    const [brandsBacklog, modelsBacklog, modelYearsBacklog] = await Promise.all([
-      db
-        .select({ count: count() })
-        .from(referenceBrands)
-        .where(
-          and(
-            eq(referenceBrands.referenceTableId, referenceTableId),
-            isNull(referenceBrands.modelsCrawledAt),
-          ),
-        ),
-      db
-        .select({ count: count() })
-        .from(referenceModels)
-        .where(
-          and(
-            eq(referenceModels.referenceTableId, referenceTableId),
-            isNull(referenceModels.yearsCrawledAt),
-          ),
-        ),
-      db
-        .select({ count: count() })
-        .from(referenceModelYears)
-        .where(
-          and(
-            eq(referenceModelYears.referenceTableId, referenceTableId),
-            isNull(referenceModelYears.priceCrawledAt),
-          ),
-        ),
-    ]);
-
-    return {
-      uncrawledBrands: brandsBacklog[0]?.count ?? 0,
-      uncrawledModels: modelsBacklog[0]?.count ?? 0,
-      uncrawledModelYears: modelYearsBacklog[0]?.count ?? 0,
-    };
   }
   async function getReferencePriceCount(referenceTableId: number): Promise<number> {
     const [result] = await db
@@ -302,44 +259,43 @@ export function createRepository(db: Database) {
   }
 
   async function getReferenceCrawlProgress(code: number) {
-    const [ref] = await db.select().from(referenceTables).where(eq(referenceTables.code, code));
+    const ref = await getReferenceByCode(code);
 
     if (!ref) return null;
 
-    const [brandCounts] = await db
-      .select({
-        total: count(),
-        pending:
-          sql<number>`count(*) filter (where ${referenceBrands.modelsCrawledAt} is null)`.mapWith(
-            Number,
-          ),
-      })
-      .from(referenceBrands)
-      .where(eq(referenceBrands.referenceTableId, ref.id));
-    const [modelCounts] = await db
-      .select({
-        total: count(),
-        pending:
-          sql<number>`count(*) filter (where ${referenceModels.yearsCrawledAt} is null)`.mapWith(
-            Number,
-          ),
-      })
-      .from(referenceModels)
-      .where(eq(referenceModels.referenceTableId, ref.id));
-    const [yearCounts] = await db
-      .select({
-        total: count(),
-        pending:
-          sql<number>`count(*) filter (where ${referenceModelYears.priceCrawledAt} is null)`.mapWith(
-            Number,
-          ),
-      })
-      .from(referenceModelYears)
-      .where(eq(referenceModelYears.referenceTableId, ref.id));
-    const [priceCounts] = await db
-      .select({ total: count() })
-      .from(prices)
-      .where(eq(prices.referenceTableId, ref.id));
+    const [[brandCounts], [modelCounts], [yearCounts], [priceCounts]] = await Promise.all([
+      db
+        .select({
+          total: count(),
+          pending:
+            sql<number>`count(*) filter (where ${referenceBrands.modelsCrawledAt} is null)`.mapWith(
+              Number,
+            ),
+        })
+        .from(referenceBrands)
+        .where(eq(referenceBrands.referenceTableId, ref.id)),
+      db
+        .select({
+          total: count(),
+          pending:
+            sql<number>`count(*) filter (where ${referenceModels.yearsCrawledAt} is null)`.mapWith(
+              Number,
+            ),
+        })
+        .from(referenceModels)
+        .where(eq(referenceModels.referenceTableId, ref.id)),
+      db
+        .select({
+          total: count(),
+          pending:
+            sql<number>`count(*) filter (where ${referenceModelYears.priceCrawledAt} is null)`.mapWith(
+              Number,
+            ),
+        })
+        .from(referenceModelYears)
+        .where(eq(referenceModelYears.referenceTableId, ref.id)),
+      db.select({ total: count() }).from(prices).where(eq(prices.referenceTableId, ref.id)),
+    ]);
     return {
       code: ref.code,
       month: ref.month,
@@ -370,25 +326,11 @@ export function createRepository(db: Database) {
   }
 
   // Reference Brands (crawl status tracking)
-  async function getOrCreateReferenceBrand(referenceTableId: number, brandId: number) {
-    const [existing] = await db
-      .select()
-      .from(referenceBrands)
-      .where(
-        and(
-          eq(referenceBrands.referenceTableId, referenceTableId),
-          eq(referenceBrands.brandId, brandId),
-        ),
-      );
-
-    if (existing) return existing;
-
-    const [inserted] = await db
+  async function ensureReferenceBrand(referenceTableId: number, brandId: number) {
+    await db
       .insert(referenceBrands)
       .values({ referenceTableId, brandId })
-      .returning();
-
-    return inserted;
+      .onConflictDoNothing({ target: [referenceBrands.referenceTableId, referenceBrands.brandId] });
   }
 
   async function getUncrawledReferenceBrands(referenceTableId: number, scope: CrawlScope) {
@@ -418,25 +360,11 @@ export function createRepository(db: Database) {
   }
 
   // Reference Models (crawl status tracking)
-  async function getOrCreateReferenceModel(referenceTableId: number, modelId: number) {
-    const [existing] = await db
-      .select()
-      .from(referenceModels)
-      .where(
-        and(
-          eq(referenceModels.referenceTableId, referenceTableId),
-          eq(referenceModels.modelId, modelId),
-        ),
-      );
-
-    if (existing) return existing;
-
-    const [inserted] = await db
+  async function ensureReferenceModel(referenceTableId: number, modelId: number) {
+    await db
       .insert(referenceModels)
       .values({ referenceTableId, modelId })
-      .returning();
-
-    return inserted;
+      .onConflictDoNothing({ target: [referenceModels.referenceTableId, referenceModels.modelId] });
   }
 
   async function getUncrawledReferenceModels(referenceTableId: number, scope: CrawlScope) {
@@ -471,25 +399,13 @@ export function createRepository(db: Database) {
   }
 
   // Reference Model Years (crawl status tracking)
-  async function getOrCreateReferenceModelYear(referenceTableId: number, modelYearId: number) {
-    const [existing] = await db
-      .select()
-      .from(referenceModelYears)
-      .where(
-        and(
-          eq(referenceModelYears.referenceTableId, referenceTableId),
-          eq(referenceModelYears.modelYearId, modelYearId),
-        ),
-      );
-
-    if (existing) return existing;
-
-    const [inserted] = await db
+  async function ensureReferenceModelYear(referenceTableId: number, modelYearId: number) {
+    await db
       .insert(referenceModelYears)
       .values({ referenceTableId, modelYearId })
-      .returning();
-
-    return inserted;
+      .onConflictDoNothing({
+        target: [referenceModelYears.referenceTableId, referenceModelYears.modelYearId],
+      });
   }
 
   async function getUncrawledReferenceModelYears(referenceTableId: number, scope: CrawlScope) {
@@ -532,7 +448,6 @@ export function createRepository(db: Database) {
     markReferencePublished,
     getReferenceByCode,
     getLatestPublishedReference,
-    getCrawlBacklog,
     getReferencePriceCount,
     getPublishedReferencesPendingLatestPricesRefreshCount,
     markPublishedReferencesLatestPricesRefreshed,
@@ -550,13 +465,13 @@ export function createRepository(db: Database) {
     getReferenceCrawlProgress,
     getModelsWithoutSegment,
     updateModelSegment,
-    getOrCreateReferenceBrand,
+    ensureReferenceBrand,
     getUncrawledReferenceBrands,
     markReferenceBrandModelsCrawled,
-    getOrCreateReferenceModel,
+    ensureReferenceModel,
     getUncrawledReferenceModels,
     markReferenceModelYearsCrawled,
-    getOrCreateReferenceModelYear,
+    ensureReferenceModelYear,
     getUncrawledReferenceModelYears,
     markReferenceModelYearPriceCrawled,
     refreshLatestPrices,

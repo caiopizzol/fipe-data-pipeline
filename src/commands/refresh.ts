@@ -1,7 +1,5 @@
-import type { CrawlBacklog } from "../db/repository.js";
 import type { ReferenceTable } from "../fipe/schemas.js";
 import { parseReferenceMonth } from "../fipe/parsers.js";
-
 import type { Repository } from "../db/repository.js";
 import type { FipeApi } from "../fipe/client.js";
 import type { CrawlOptions, CrawlResult } from "./crawl.js";
@@ -23,6 +21,12 @@ export interface ReferenceCursor {
 export interface RefreshReference extends ReferenceCursor {
   code: number;
   label: string;
+}
+
+interface CrawlBacklog {
+  uncrawledBrands: number;
+  uncrawledModels: number;
+  uncrawledModelYears: number;
 }
 
 export interface RefreshValidationInput {
@@ -246,15 +250,17 @@ export async function runRefresh(
         return exitCode;
       }
 
-      const reference = await repo.getReferenceByCode(target.code);
-      if (!reference) {
+      const progress = await repo.getReferenceCrawlProgress(target.code);
+      if (!progress) {
         throw new Error(`reference ${target.code} was not found after crawl`);
       }
 
-      const [backlog, priceCount] = await Promise.all([
-        repo.getCrawlBacklog(reference.id),
-        repo.getReferencePriceCount(reference.id),
-      ]);
+      const backlog = {
+        uncrawledBrands: progress.brands.pending,
+        uncrawledModels: progress.models.pending,
+        uncrawledModelYears: progress.modelYears.pending,
+      };
+      const priceCount = progress.prices;
       const decision = validateRefreshCandidate({
         backlog,
         priceCount,

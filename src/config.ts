@@ -22,8 +22,6 @@ const crawlerSchema = z
     path: ["MAX_THROTTLE_MS"],
   });
 const refreshSchema = z.object({ HC_REFRESH_URL: optional(z.url()) });
-export const readRefreshConfig = (source: Environment = process.env) =>
-  parse(refreshSchema, source);
 const backupSchema = databaseSchema.extend({
   R2_ACCESS_KEY_ID: z.string().min(1),
   R2_SECRET_ACCESS_KEY: z.string().min(1),
@@ -45,6 +43,8 @@ export const readDatabaseConfig = (source: Environment = process.env) =>
   parse(databaseSchema, source);
 export const readCrawlerConfig = (source: Environment = process.env) =>
   parse(crawlerSchema, source);
+export const readRefreshConfig = (source: Environment = process.env) =>
+  parse(refreshSchema, source);
 export const readBackupConfig = (source: Environment = process.env) => parse(backupSchema, source);
 export function readClassificationKey(source: Environment = process.env): string {
   const key = source.ANTHROPIC_API_KEY?.trim();
