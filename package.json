@@ -1,6 +1,6 @@
 {
   "name": "fipe-data-pipeline",
-  "version": "1.14.1",
+  "version": "1.14.2",
   "description": "Data pipeline for FIPE vehicle pricing data",
   "license": "MIT",
   "type": "module",
