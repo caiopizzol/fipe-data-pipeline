@@ -3,11 +3,6 @@ name: Release
 on:
   push:
     branches: [main]
-  workflow_dispatch:
-
-concurrency:
-  group: release-please
-  cancel-in-progress: false
 
 jobs:
   release:
@@ -16,16 +11,9 @@ jobs:
       contents: write
       issues: write
       pull-requests: write
-      actions: write
 
     steps:
-      - name: Release Please
-        id: release
-        uses: googleapis/release-please-action@v5
-
-      - name: Run CI on the release PR
-        if: ${{ steps.release.outputs.pr }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_BRANCH: ${{ fromJSON(steps.release.outputs.pr).headBranchName }}
-        run: gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "$RELEASE_BRANCH"
+      - uses: googleapis/release-please-action@v5
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          release-type: node
