@@ -6,7 +6,7 @@ test -f scripts/crawl-vw-june-2024.sh
 test -x scripts/crawl-vw-june-2024.sh
 
 grep -Fq "set -euo pipefail" scripts/crawl-vw-june-2024.sh
-grep -Fq "bun run db:push" scripts/crawl-vw-june-2024.sh
+grep -Fq "bun run db:migrate" scripts/crawl-vw-june-2024.sh
 grep -Fq "bun run crawl -- --brand 59 --year 2024 --month 6" scripts/crawl-vw-june-2024.sh
 grep -Fq "bun run status" scripts/crawl-vw-june-2024.sh
 

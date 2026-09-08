@@ -4,7 +4,7 @@ The script should:
 
 - be executable
 - use `set -euo pipefail`
-- run `bun run db:push`
+- run `bun run db:migrate`
 - run `bun run crawl -- --brand 59 --year 2024 --month 6`
 - run `bun run status`
 

@@ -13,13 +13,19 @@
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "format:check": "biome format .",
-    "typecheck": "bunx tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:migrate": "bun src/db/migrate.ts",
+    "db:generate": "drizzle-kit generate",
+    "test": "bun --no-env-file test src",
+    "test:integration": "bun --no-env-file scripts/test-integration.ts",
+    "check": "bun run lint && bun run typecheck && bun run test && bun run test:integration",
+    "docs:check": "pickled test . && pickled check . --plan && pickled build . --plan",
+    "hooks:install": "lefthook install"
   },
   "license": "MIT",
   "description": "Data pipeline for FIPE vehicle pricing data",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.71.2",
-    "cli-progress": "^3.12.0",
+    "@anthropic-ai/sdk": "^0.93.0",
     "commander": "^14.0.2",
     "drizzle-orm": "^0.45.1",
     "postgres": "^3.4.7",
@@ -27,13 +33,17 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
-    "@types/bun": "^1.3.0",
+    "@pickled-dev/cli": "0.38.0",
     "@semantic-release/git": "^10.0.1",
-    "@types/cli-progress": "^3.11.6",
-    "@types/node": "^24.10.2",
+    "@types/bun": "^1.3.0",
     "drizzle-kit": "^0.31.8",
     "lefthook": "^1.11.5",
     "semantic-release": "^25.0.2",
-    "typescript": "^5.9.3"
+    "typescript": "7.0.2"
+  },
+  "private": true,
+  "packageManager": "bun@1.3.12",
+  "engines": {
+    "bun": "1.3.12"
   }
 }

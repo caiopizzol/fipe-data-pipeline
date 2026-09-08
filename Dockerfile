@@ -1,9 +1,11 @@
-FROM oven/bun:alpine
+FROM oven/bun:1.3.12-alpine
+ARG POSTGRES_MAJOR=17
 WORKDIR /app
-# pg client (matches the Postgres 17 server) + aws-cli for R2 backups.
-RUN apk add --no-cache postgresql17-client aws-cli
+# PostgreSQL client and AWS CLI for backup and restore commands.
+RUN apk add --no-cache postgresql${POSTGRES_MAJOR}-client aws-cli
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile --production
 COPY src ./src
+COPY drizzle ./drizzle
 COPY tsconfig.json ./
 CMD ["tail", "-f", "/dev/null"]

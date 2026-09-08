@@ -1,158 +1,129 @@
-#!/usr/bin/env node
-import { Command } from 'commander';
-import { runBackup, runRestoreDrill } from './backup.js';
-import { classifyModels } from './classifier/segment-classifier.js';
-import { crawl, status } from './crawler/processor.js';
-import { closeConnection } from './db/connection.js';
-import { getModelsWithoutSegment, updateModelSegment } from './db/repository.js';
+#!/usr/bin/env bun
+import { Command, Option } from 'commander';
+import { version } from '../package.json';
+import { parseCodes, parseInteger, parseNumberList } from './cli-options.js';
+import {
+  readBackupConfig,
+  readClassificationKey,
+  readCrawlerConfig,
+  readDatabaseConfig,
+} from './config.js';
+import { createConnection } from './db/connection.js';
+import { type Repository, createRepository } from './db/repository.js';
 
-const program = new Command();
-
-/**
- * Parse a flexible number input (single value, range, or list)
- * Examples: "2023" -> [2023], "2020-2023" -> [2020,2021,2022,2023], "1,3,6" -> [1,3,6]
- */
-function parseNumberList(value: string): number[] {
-  const results: number[] = [];
-  for (const part of value.split(',')) {
-    if (part.includes('-')) {
-      const [start, end] = part.split('-').map((v) => Number.parseInt(v.trim(), 10));
-      for (let i = start; i <= end; i++) {
-        results.push(i);
-      }
-    } else {
-      results.push(Number.parseInt(part.trim(), 10));
+export function createProgram() {
+  const program = new Command()
+    .name('fipe')
+    .description('FIPE vehicle pricing pipeline')
+    .version(version);
+  async function withDatabase(work: (repo: Repository) => Promise<unknown>, lock = false) {
+    const connection = createConnection(readDatabaseConfig().DATABASE_URL);
+    let failure: unknown;
+    try {
+      const run = () => work(createRepository(connection.db));
+      if (lock) await connection.withCrawlLock(run);
+      else await run();
+    } catch (error) {
+      failure = error;
     }
+    try {
+      await connection.close();
+    } catch (error) {
+      const errors = failure ? [failure, error] : [error];
+      failure = new AggregateError(
+        errors,
+        errors.map((e) => (e instanceof Error ? e.message : String(e))).join('; '),
+      );
+    }
+    if (failure) throw failure;
   }
-  return [...new Set(results)].sort((a, b) => a - b);
+
+  program
+    .command('crawl')
+    .description('Crawl FIPE car prices and resume unfinished work')
+    .addOption(
+      new Option('-r, --reference <code>', 'Reference table code')
+        .argParser((v) => parseInteger(v))
+        .conflicts(['year', 'month']),
+    )
+    .option('-y, --year <years>', 'Year, list or range (default: current year)', (v) =>
+      parseNumberList(v, 2001, 9999),
+    )
+    .option('-M, --month <months>', 'Month, list or range', (v) => parseNumberList(v, 1, 12))
+    .option('-b, --brand <codes>', 'Brand codes, comma-separated', parseCodes)
+    .addOption(
+      new Option('-m, --model <codes>', 'Model codes (requires --brand)').argParser(parseCodes),
+    )
+    .option('-c, --classify', 'Classify newly discovered models with AI')
+    .option('-f, --force', 'Re-fetch the selected scope')
+    .action(async (options) => {
+      if (options.model && !options.brand) program.error('--model requires --brand');
+      const config = readCrawlerConfig();
+      const apiKey = options.classify ? readClassificationKey() : undefined;
+      const { crawl } = await import('./commands/crawl.js');
+      const { FipeClient } = await import('./fipe/client.js');
+      const classifyModel = apiKey
+        ? (await import('./classifier/classify.js')).createClassifier(apiKey).classifySingleModel
+        : undefined;
+      await withDatabase(async (repo) => {
+        const result = await crawl(
+          {
+            referenceCode: options.reference,
+            years: options.year,
+            months: options.month,
+            brandCodes: options.brand,
+            modelCodes: options.model,
+            force: options.force,
+            refreshLatestPrices: config.REFRESH_LATEST_PRICES,
+          },
+          repo,
+          new FipeClient(config),
+          classifyModel,
+        );
+        if (result.failed)
+          throw new Error(`Crawl incomplete: ${result.failed} failures; re-run to resume`);
+      }, true);
+    });
+
+  program
+    .command('status')
+    .description('Show stored data and reference coverage')
+    .option('-r, --reference <code>', 'Reference table code', (v) => parseInteger(v))
+    .action(async (options) => {
+      const { status } = await import('./commands/status.js');
+      await withDatabase((repo) => status(repo, options.reference));
+    });
+  program
+    .command('classify')
+    .description('Classify models without segments')
+    .option('-n, --dry-run', 'Preview without calling the classification API')
+    .action(async (options) => {
+      const key = options.dryRun ? '' : readClassificationKey();
+      const { classify } = await import('./commands/classify.js');
+      await withDatabase((repo) => classify(repo, Boolean(options.dryRun), key));
+    });
+  program
+    .command('backup')
+    .description('Upload a PostgreSQL backup to S3/R2 with retention')
+    .action(async () => {
+      const { createBackupCommands } = await import('./commands/backup.js');
+      await createBackupCommands(readBackupConfig()).runBackup();
+    });
+  program
+    .command('restore-drill')
+    .description('Verify the latest backup in a temporary database')
+    .action(async () => {
+      const { createBackupCommands } = await import('./commands/backup.js');
+      await createBackupCommands(readBackupConfig()).runRestoreDrill();
+    });
+  return program;
 }
 
-function parseCommaSeparated(value: string): string[] {
-  return [
-    ...new Set(
-      value
-        .split(',')
-        .map((v) => v.trim())
-        .filter(Boolean),
-    ),
-  ];
+if (import.meta.main) {
+  try {
+    await createProgram().parseAsync();
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exitCode = 1;
+  }
 }
-
-program
-  .command('crawl')
-  .description('Crawl FIPE data and store in database')
-  .option('-r, --reference <code>', 'Specific reference table code')
-  .option('-y, --year <year>', 'Year(s) to crawl (e.g., 2023, 2020-2023, or 2020,2022,2023)')
-  .option('-M, --month <month>', 'Month(s) to crawl (e.g., 6, 1-6, or 1,3,6)')
-  .option('-b, --brand <codes>', 'Brand code(s), comma-separated')
-  .option('-m, --model <codes>', 'Model code(s), comma-separated (requires --brand)')
-  .option('-c, --classify', 'Classify new models by segment using AI')
-  .option('-f, --force', 'Re-fetch all data, ignoring sync status')
-  .action(async (options) => {
-    try {
-      await crawl({
-        referenceCode: options.reference ? Number.parseInt(options.reference, 10) : undefined,
-        years: options.year ? parseNumberList(options.year) : undefined,
-        months: options.month ? parseNumberList(options.month) : undefined,
-        brandCodes: options.brand ? parseCommaSeparated(options.brand) : undefined,
-        modelCodes: options.model ? parseCommaSeparated(options.model) : undefined,
-        classify: options.classify,
-        force: options.force,
-      });
-    } catch (err) {
-      console.error('Crawl failed:', err);
-      process.exit(1);
-    }
-  });
-
-program
-  .command('status')
-  .description('Show database statistics')
-  .action(async () => {
-    try {
-      await status();
-    } catch (err) {
-      console.error('Status failed:', err);
-      process.exit(1);
-    }
-  });
-
-program
-  .command('classify')
-  .description('Classify models by segment using AI')
-  .option('-n, --dry-run', 'Show what would be classified without making changes')
-  .action(async (options) => {
-    try {
-      // Batch classification
-      const modelsToClassify = await getModelsWithoutSegment();
-
-      if (modelsToClassify.length === 0) {
-        console.log('All models are already classified.');
-        return;
-      }
-
-      console.log(`Found ${modelsToClassify.length} models without segment.`);
-
-      if (options.dryRun) {
-        console.log('\nDry run - would classify:');
-        for (const model of modelsToClassify.slice(0, 20)) {
-          console.log(`  - ${model.brandName} ${model.modelName}`);
-        }
-        if (modelsToClassify.length > 20) {
-          console.log(`  ... and ${modelsToClassify.length - 20} more`);
-        }
-        return;
-      }
-
-      console.log('\nClassifying models...');
-      const results = await classifyModels(modelsToClassify);
-
-      let classified = 0;
-      let failed = 0;
-
-      for (const result of results) {
-        if (result.segment) {
-          await updateModelSegment(result.id, result.segment, 'ai');
-          classified++;
-        } else {
-          failed++;
-        }
-      }
-
-      console.log(`\nDone! Classified: ${classified}, Failed: ${failed}`);
-    } catch (err) {
-      console.error('Classification failed:', err);
-      process.exit(1);
-    }
-  });
-
-program
-  .command('backup')
-  .description('pg_dump the database and upload to R2 with retention')
-  .action(async () => {
-    try {
-      await runBackup();
-    } catch (err) {
-      console.error('Backup failed:', err);
-      process.exit(1);
-    }
-  });
-
-program
-  .command('restore-drill')
-  .description('Download the latest R2 backup and verify it restores into a scratch database')
-  .action(async () => {
-    try {
-      await runRestoreDrill();
-    } catch (err) {
-      console.error('Restore drill failed:', err);
-      process.exit(1);
-    }
-  });
-
-async function main() {
-  await program.parseAsync();
-  await closeConnection();
-}
-
-main();

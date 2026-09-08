@@ -49,3 +49,9 @@ export const fipeErrorSchema = z.object({
   codigo: z.string(),
   erro: z.string(),
 });
+
+export type ReferenceTable = z.infer<typeof referenceTableSchema>;
+export type Brand = z.infer<typeof brandSchema>;
+export type ModelsResponse = z.infer<typeof modelsResponseSchema>;
+export type Year = z.infer<typeof yearSchema>;
+export type Price = z.infer<typeof priceSchema>;

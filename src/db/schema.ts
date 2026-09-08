@@ -31,21 +31,6 @@ export const brands = pgTable(
   (table) => [index('idx_brands_name').on(table.name)],
 );
 
-export const SEGMENTS = [
-  'Buggy',
-  'Caminhão Leve',
-  'Conversível',
-  'Coupé',
-  'Hatch',
-  'Perua',
-  'Pick-up',
-  'Sedã',
-  'SUV',
-  'Van/Utilitário',
-] as const;
-
-export type Segment = (typeof SEGMENTS)[number];
-
 export const models = pgTable(
   'models',
   {

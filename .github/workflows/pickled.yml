@@ -15,9 +15,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
-      - run: bunx @pickled-dev/cli test .
-      - run: bunx @pickled-dev/cli check . --plan
-      - run: bunx @pickled-dev/cli build . --plan
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - run: bun run docs:check
 
   real-agent:
     if: github.event_name == 'workflow_dispatch'
@@ -25,10 +26,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
-      - run: bunx @pickled-dev/cli check . --max-cells "${PICKLED_MAX_CELLS:-12}"
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - run: bunx pickled check . --max-cells "${PICKLED_MAX_CELLS:-12}"
         env:
           PICKLED_MAX_CELLS: ${{ inputs.max_cells }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY_PICKLED }}
-      - run: bunx @pickled-dev/cli build . --max-cells 4
+      - run: bunx pickled build . --max-cells 4
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY_PICKLED }}

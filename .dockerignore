@@ -1,0 +1,10 @@
+node_modules
+.git
+.env
+.env.*
+.codex
+.pickled
+docs
+fixtures
+tests
+*.log

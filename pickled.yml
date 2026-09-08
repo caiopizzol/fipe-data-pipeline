@@ -11,8 +11,8 @@ sources:
   readme: { path: ./README.md }
   cli: { path: ./src/index.ts }
   config: { path: ./src/config.ts }
-  backup: { path: ./src/backup.ts }
-  schema: { path: ./initial.sql }
+  backup: { path: ./src/commands/backup.ts }
+  schema: { path: ./src/db/schema.ts }
 
 agents:
   quick:
@@ -40,7 +40,7 @@ facts:
   quickstart:
     statement: Mostra os comandos de início rápido.
     match:
-      allOf: ["cp .env.example .env", "docker compose up -d", "bun install", "bun run db:push", "bun run crawl"]
+      allOf: ["cp .env.example .env", "docker compose up -d", "bun install", "bun run db:migrate", "bun run crawl"]
   project_commands:
     statement: Lista comandos operacionais principais.
     match:
@@ -126,7 +126,7 @@ questions:
     rejects: [wrong_runtime]
     examples:
       pass:
-        - "Use Bun e Docker. Rode `cp .env.example .env`, `docker compose up -d`, `bun install`, `bun run db:push` e `bun run crawl`. Depois use comandos como `bun run status`, `bun run classify`, `bun run backup`, `bun run restore-drill` e `bun run typecheck`."
+        - "Use Bun e Docker. Rode `cp .env.example .env`, `docker compose up -d`, `bun install`, `bun run db:migrate` e `bun run crawl`. Depois use comandos como `bun run status`, `bun run classify`, `bun run backup`, `bun run restore-drill` e `bun run typecheck`."
       fail:
         - "Use `npm install`, depois `npm run crawl`; não precisa de Bun."
 
@@ -193,7 +193,7 @@ builds:
     goal: >-
       Create `scripts/crawl-vw-june-2024.sh`, an executable helper for a
       narrow FIPE crawl. The script should use `set -euo pipefail`, run
-      `bun run db:push`, then run `bun run crawl -- --brand 59 --year 2024
+      `bun run db:migrate`, then run `bun run crawl -- --brand 59 --year 2024
       --month 6`, then run `bun run status`. Do not use npm, do not add
       `--force`, and do not add `--classify`.
     agents: [builder]
