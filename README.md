@@ -158,6 +158,21 @@ Este pipeline coleta apenas carros (tipo 1 da FIPE).
 
 A Tabela FIPE é a referência de preço médio de veículos mais utilizada no Brasil. Os dados são coletados mensalmente junto a concessionárias, revendedoras e fabricantes em todo o país.
 
+## Releases
+
+Usamos [Release Please](https://github.com/googleapis/release-please) com Conventional Commits.
+Ao receber commits em `main`, o workflow mantém um PR com a próxima versão de `package.json`,
+o changelog e o manifest. Revise o PR e aguarde a CI antes de mesclá-lo; o merge cria a tag
+`vX.Y.Z` e o GitHub Release. Este projeto não publica no npm.
+
+`fix:` gera patch, `feat:` gera minor e `!` ou `BREAKING CHANGE:` gera major. Releases existentes
+são preservados; o manifest começa em `1.14.1`. O primeiro PR de release considera commits
+posteriores a `v1.14.1`.
+
+O workflow usa `GITHUB_TOKEN` e dispara a CI explicitamente no branch do PR de release.
+O repositório deve permitir que GitHub Actions crie pull requests em Settings → Actions → General.
+Não é necessário cadastrar um token pessoal.
+
 ## Contribuidores
 
 <a href="https://github.com/caiopizzol"><img src="https://github.com/caiopizzol.png" width="50" height="50" alt="caiopizzol" title="Caio Pizzol" /></a>
