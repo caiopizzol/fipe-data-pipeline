@@ -1,4 +1,4 @@
-import type { Repository } from '../db/repository.js';
+import type { Repository } from "../db/repository.js";
 
 export async function status(repo: Repository, referenceCode?: number): Promise<void> {
   if (referenceCode !== undefined) {
@@ -23,14 +23,14 @@ export async function status(repo: Repository, referenceCode?: number): Promise<
     console.log(`  Prices stored:               ${progress.prices}`);
     console.log(
       pending === 0 && progress.completedAt && progress.brands.total > 0
-        ? '  Status: complete'
+        ? "  Status: complete"
         : `  Status: INCOMPLETE or scoped (${pending} known pending) - re-run crawl --reference ${progress.code} to resume`,
     );
     return;
   }
 
   const stats = await repo.getStats();
-  console.log('\nDatabase status:');
+  console.log("\nDatabase status:");
   console.log(`  References: ${stats.references}`);
   console.log(`  Brands: ${stats.brands}`);
   console.log(`  Models: ${stats.models}`);

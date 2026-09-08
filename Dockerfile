@@ -1,4 +1,4 @@
-FROM oven/bun:1.3.12-alpine
+FROM oven/bun:1.3.14-alpine
 ARG POSTGRES_MAJOR=17
 WORKDIR /app
 # PostgreSQL client and AWS CLI for backup and restore commands.

@@ -9,9 +9,9 @@ export function parsePrice(valor: string): string {
     throw new Error(`Invalid FIPE price: "${valor}"`);
   }
   return valor
-    .replace(/^R\$\s+/, '')
-    .replace(/\./g, '')
-    .replace(',', '.');
+    .replace(/^R\$\s+/, "")
+    .replace(/\./g, "")
+    .replace(",", ".");
 }
 
 export function parseReferenceMonth(mes: string): { month: number; year: number } {
@@ -31,8 +31,8 @@ export function parseReferenceMonth(mes: string): { month: number; year: number 
     dezembro: 12,
   };
 
-  const [monthName, yearStr] = mes.trim().toLowerCase().split('/');
-  if (!months[monthName] || !/^\d{4}$/.test(yearStr ?? '') || mes.trim().split('/').length !== 2)
+  const [monthName, yearStr] = mes.trim().toLowerCase().split("/");
+  if (!months[monthName] || !/^\d{4}$/.test(yearStr ?? "") || mes.trim().split("/").length !== 2)
     throw new Error(`Invalid FIPE reference month: "${mes}"`);
   return { month: months[monthName], year: Number(yearStr) };
 }

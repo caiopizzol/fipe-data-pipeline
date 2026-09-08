@@ -10,6 +10,3 @@ dist/
 
 # Local-only ops runbooks (reference personal infra topology; keep out of the public repo)
 docs/runbooks/
-
-
-.pickled/

@@ -1,29 +1,29 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { SEGMENTS, type Segment } from './segments.js';
+import Anthropic from "@anthropic-ai/sdk";
+import { SEGMENTS, type Segment } from "./segments.js";
 
 type Vehicle = { brandName: string; modelName: string };
 type ModelInput = Vehicle & { id: number };
-const MODEL = 'claude-sonnet-4-5';
+const MODEL = "claude-sonnet-4-5";
 const BATCH_SIZE = 20;
 const SYSTEM_PROMPT = `Classify Brazilian car models into these segments, using exactly these values:
-${SEGMENTS.join(', ')}.
+${SEGMENTS.join(", ")}.
 Respond with one numbered segment per input, retaining its number. No other text.
 Perua means station wagon. Caminhão Leve means light cargo trucks.
 Van/Utilitário means passenger vans and utility vehicles.`;
 
 export function parseSegments(text: string, size: number): Segment[] {
   const segments = new Map<number, Segment>();
-  for (const line of text.trim().split('\n')) {
+  for (const line of text.trim().split("\n")) {
     const match = /^(\d+)\.\s*(.+)$/.exec(line.trim());
-    if (!match) throw new Error('Classification must contain numbered segments');
+    if (!match) throw new Error("Classification must contain numbered segments");
     const number = Number(match[1]);
     const segment = SEGMENTS.find((value) => value.toLowerCase() === match[2].trim().toLowerCase());
     if (!segment || number < 1 || number > size || segments.has(number)) {
-      throw new Error('Classification contains an invalid, duplicate or out-of-range answer');
+      throw new Error("Classification contains an invalid, duplicate or out-of-range answer");
     }
     segments.set(number, segment);
   }
-  if (segments.size !== size) throw new Error('Classification is missing answers');
+  if (segments.size !== size) throw new Error("Classification is missing answers");
   return Array.from({ length: size }, (_, index) => segments.get(index + 1) as Segment);
 }
 
@@ -35,19 +35,19 @@ export function createClassifier(apiKey: string, client = new Anthropic({ apiKey
       system: SYSTEM_PROMPT,
       messages: [
         {
-          role: 'user',
+          role: "user",
           content: vehicles
             .map((v, i) => `${i + 1}. Brand: ${v.brandName}, Model: ${v.modelName}`)
-            .join('\n'),
+            .join("\n"),
         },
       ],
     });
-    if (response.stop_reason === 'max_tokens')
-      throw new Error('Classification response was truncated');
+    if (response.stop_reason === "max_tokens")
+      throw new Error("Classification response was truncated");
     const text = response.content
-      .filter((block) => block.type === 'text')
+      .filter((block) => block.type === "text")
       .map((block) => block.text)
-      .join('\n');
+      .join("\n");
     return parseSegments(text, vehicles.length);
   }
   return {
@@ -70,7 +70,7 @@ export function createClassifier(apiKey: string, client = new Anthropic({ apiKey
       }
       return results;
     },
-    async classifySingleModel(brandName: string, modelName: string): Promise<Segment> {
+    async classifySingleModel(this: void, brandName: string, modelName: string): Promise<Segment> {
       const [segment] = await classifyBatch([{ brandName, modelName }]);
       return segment;
     },

@@ -13,7 +13,14 @@
       "idx": 1,
       "version": "7",
       "when": 1788825172314,
-      "tag": "0001_reset_completion",
+      "tag": "0001_publication",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788826678155,
+      "tag": "0002_reset_completion",
       "breakpoints": true
     }
   ]

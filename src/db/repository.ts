@@ -1,6 +1,6 @@
-import { and, count, eq, inArray, isNull, sql } from 'drizzle-orm';
-import type { Segment } from '../classifier/segments.js';
-import type { Database } from './connection.js';
+import { and, count, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import type { Segment } from "../classifier/segments.js";
+import type { Database } from "./connection.js";
 import {
   brands,
   modelYears,
@@ -10,7 +10,13 @@ import {
   referenceModelYears,
   referenceModels,
   referenceTables,
-} from './schema.js';
+} from "./schema.js";
+
+export interface CrawlBacklog {
+  uncrawledBrands: number;
+  uncrawledModels: number;
+  uncrawledModelYears: number;
+}
 
 export interface CrawlScope {
   brandCodes?: string[];
@@ -18,6 +24,122 @@ export interface CrawlScope {
 }
 
 export function createRepository(db: Database) {
+  async function markReferencePublished(code: number) {
+    await db
+      .update(referenceTables)
+      .set({
+        publishedAt: sql`NOW()`,
+        latestPricesRefreshedAt: null,
+        backupCompletedAt: null,
+      })
+      .where(eq(referenceTables.code, code));
+  }
+  async function getReferenceByCode(code: number) {
+    const [reference] = await db
+      .select()
+      .from(referenceTables)
+      .where(eq(referenceTables.code, code))
+      .limit(1);
+
+    return reference;
+  }
+  async function getLatestPublishedReference() {
+    const [reference] = await db
+      .select()
+      .from(referenceTables)
+      .where(isNotNull(referenceTables.publishedAt))
+      .orderBy(desc(referenceTables.year), desc(referenceTables.month), desc(referenceTables.code))
+      .limit(1);
+
+    return reference;
+  }
+  async function getCrawlBacklog(referenceTableId: number): Promise<CrawlBacklog> {
+    const [brandsBacklog, modelsBacklog, modelYearsBacklog] = await Promise.all([
+      db
+        .select({ count: count() })
+        .from(referenceBrands)
+        .where(
+          and(
+            eq(referenceBrands.referenceTableId, referenceTableId),
+            isNull(referenceBrands.modelsCrawledAt),
+          ),
+        ),
+      db
+        .select({ count: count() })
+        .from(referenceModels)
+        .where(
+          and(
+            eq(referenceModels.referenceTableId, referenceTableId),
+            isNull(referenceModels.yearsCrawledAt),
+          ),
+        ),
+      db
+        .select({ count: count() })
+        .from(referenceModelYears)
+        .where(
+          and(
+            eq(referenceModelYears.referenceTableId, referenceTableId),
+            isNull(referenceModelYears.priceCrawledAt),
+          ),
+        ),
+    ]);
+
+    return {
+      uncrawledBrands: brandsBacklog[0]?.count ?? 0,
+      uncrawledModels: modelsBacklog[0]?.count ?? 0,
+      uncrawledModelYears: modelYearsBacklog[0]?.count ?? 0,
+    };
+  }
+  async function getReferencePriceCount(referenceTableId: number): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(prices)
+      .where(eq(prices.referenceTableId, referenceTableId));
+
+    return result?.count ?? 0;
+  }
+  async function getPublishedReferencesPendingLatestPricesRefreshCount(): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(referenceTables)
+      .where(
+        and(
+          isNotNull(referenceTables.publishedAt),
+          isNull(referenceTables.latestPricesRefreshedAt),
+        ),
+      );
+
+    return result?.count ?? 0;
+  }
+  async function markPublishedReferencesLatestPricesRefreshed() {
+    await db
+      .update(referenceTables)
+      .set({ latestPricesRefreshedAt: sql`NOW()` })
+      .where(
+        and(
+          isNotNull(referenceTables.publishedAt),
+          isNull(referenceTables.latestPricesRefreshedAt),
+        ),
+      );
+  }
+  async function getPublishedReferencesPendingBackupCount(): Promise<number> {
+    const [result] = await db
+      .select({ count: count() })
+      .from(referenceTables)
+      .where(
+        and(isNotNull(referenceTables.publishedAt), isNull(referenceTables.backupCompletedAt)),
+      );
+
+    return result?.count ?? 0;
+  }
+  async function markPublishedReferencesBackedUp() {
+    await db
+      .update(referenceTables)
+      .set({ backupCompletedAt: sql`NOW()` })
+      .where(
+        and(isNotNull(referenceTables.publishedAt), isNull(referenceTables.backupCompletedAt)),
+      );
+  }
   // Reference Tables
   async function getOrCreateReferenceTable(code: number, month: number, year: number) {
     const [existing] = await db
@@ -243,7 +365,7 @@ export function createRepository(db: Database) {
       .where(isNull(models.segment));
   }
 
-  async function updateModelSegment(modelId: number, segment: Segment, source: 'ai' | 'manual') {
+  async function updateModelSegment(modelId: number, segment: Segment, source: "ai" | "manual") {
     await db.update(models).set({ segment, segmentSource: source }).where(eq(models.id, modelId));
   }
 
@@ -407,6 +529,16 @@ export function createRepository(db: Database) {
   }
 
   return {
+    markReferencePublished,
+    getReferenceByCode,
+    getLatestPublishedReference,
+    getCrawlBacklog,
+    getReferencePriceCount,
+    getPublishedReferencesPendingLatestPricesRefreshCount,
+    markPublishedReferencesLatestPricesRefreshed,
+    getPublishedReferencesPendingBackupCount,
+    markPublishedReferencesBackedUp,
+
     getOrCreateReferenceTable,
     markReferenceCrawled,
     clearCrawlStatus,

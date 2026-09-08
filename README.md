@@ -13,106 +13,128 @@
 <p align="center">
   <a href="https://github.com/caiopizzol/fipe-data-pipeline/releases"><img src="https://img.shields.io/github/v/release/caiopizzol/fipe-data-pipeline" alt="Release"></a>
   <a href="https://bun.sh"><img src="https://img.shields.io/badge/bun-1.x-f472b6" alt="Bun"></a>
-  <a href="https://biomejs.dev"><img src="https://img.shields.io/badge/biome-linter-60a5fa" alt="Biome"></a>
+  <a href="https://vite.plus"><img src="https://img.shields.io/badge/Vite%2B-tooling-646cff" alt="Vite+"></a>
 </p>
 
-Pipeline em Bun e TypeScript para coletar preços históricos de **carros e utilitários da categoria 1 da FIPE**, armazenar em PostgreSQL e retomar coletas interrompidas. Classificação por IA e backups são opcionais.
+## Requisitos
 
-## Início rápido
+- [Bun 1.3.14](https://bun.sh) — executa o pipeline e instala as dependências.
+- [Docker](https://docs.docker.com/get-docker/) — roda o PostgreSQL local.
 
-Requisitos: **Bun 1.3.12** e **Docker**. Use `bun install` neste projeto.
+`bun run test` e `bun run check` exigem Docker em execução. Os testes criam bancos
+PostgreSQL 16 e 17 temporários e os removem ao terminar, sem usar seu `DATABASE_URL`. Na primeira
+execução, o Docker baixa as imagens necessárias.
 
-```bash
+## Início Rápido
+
+Para criar um banco local vazio:
+
+```sh
 cp .env.example .env
 bun install --frozen-lockfile
 docker compose up -d --wait
 bun run db:migrate
-bun run crawl -- --brand 59 --year 2024 --month 6
 bun run status
 ```
 
-O exemplo coleta uma marca em um mês. Sem filtros, `bun run crawl` coleta todos os meses disponíveis do ano atual. Uma coleta ampla pode demorar: as requisições respeitam o limite configurado da FIPE.
+`db:migrate` cria tabelas e `latest_prices`; o banco local usa a porta 5433. Para bancos existentes,
+leia [operações](docs/operations.md#banco-existente) antes de adotar as migrations.
 
-Para um banco existente, veja a [adoção das migrations](docs/operations.md#banco-existente) antes de executar `db:migrate`.
+## Via Docker
+
+A imagem inclui os clientes PostgreSQL e AWS necessários para backup. Fora dela, instale `pg_dump`,
+`pg_restore`, `psql` e `aws` para usar esses comandos.
+
+```sh
+docker build -t fipe-crawler .
+docker run -d --name fipe --env-file .env fipe-crawler
+docker exec fipe bun src/index.ts status
+```
+
+`DATABASE_URL` deve ser acessível pelo container; `localhost` aponta para ele mesmo.
+A imagem aguarda comandos e não inicia a coleta sozinha.
 
 ## Comandos
 
-| Comando | Uso |
-|---|---|
-| `bun src/index.ts --help` | Ajuda, sem precisar configurar banco ou chaves |
-| `bun run crawl` | Coletar preços e retomar pendências |
-| `bun run status` | Contagens do banco |
-| `bun run status -- --reference 328` | Cobertura e pendências de uma referência |
-| `bun run classify` | Classificar modelos sem segmento |
-| `bun run classify -- --dry-run` | Mostrar modelos, sem chamar a IA |
-| `bun run backup` | Criar e enviar backup para S3/R2 |
-| `bun run restore-drill` | Restaurar o backup mais recente em banco temporário |
-| `bun run db:migrate` | Aplicar migrations versionadas |
-| `bun run db:generate -- --name descricao` | Gerar migration após alterar o schema |
-| `bun run check` | Lint, tipos, testes unitários e PostgreSQL descartável |
-| `bun run docs:check` | Validar exemplos e planos do Pickled, sem chamar agentes |
-
-## Coletas com escopo
-
-```bash
-bun run crawl -- --year 2024
-bun run crawl -- --year 2020-2024
-bun run crawl -- --year 2020,2022,2024
-bun run crawl -- --month 1-6
-bun run crawl -- --year 2023-2024 --month 1,6,12
-bun run crawl -- --brand 59
-bun run crawl -- --brand 21,22,59
-bun run crawl -- --brand 59 --model 5940
-bun run crawl -- --reference 328
-bun run crawl -- --brand 59 --year 2024 --month 6 --force
-bun run crawl -- --classify
+```sh
+bun install --frozen-lockfile       # instalar dependências
+bun run crawl                      # coletar dados
+bun run status                     # totais no banco
+bun run refresh                    # coletar e publicar novos meses
+bun run backup                     # salvar dump no R2/S3
+bun run restore-drill              # testar a restauração
+bun run check                      # formatação, lint, tipos e testes
+bun run format                     # formatar com Vite+
 ```
 
-`--model` exige `--brand`. `--reference` substitui a seleção por calendário e não pode ser combinado com `--year` ou `--month`. Os filtros valem para todas as etapas, inclusive pendências que já estavam no banco.
+Também há `bun run test`, `bun run lint` e `bun run typecheck`.
 
-`--force` reinicia os checkpoints **somente do escopo selecionado** e busca novamente os dados. Se houver falha, execute o mesmo comando sem `--force` para retomar. Uma coleta com falhas termina com código diferente de zero. Uma coleta limitada a marcas ou modelos não comprova cobertura completa da referência.
+## Uso
 
-## Desenvolvimento
+Hoje, a coleta usa o tipo 1 da FIPE (carros). Motos e caminhões não estão incluídos.
 
-```bash
-bun run hooks:install    # instalar Lefthook neste clone
-bun run check            # mesma verificação usada na CI
-bun run test             # testes unitários rápidos, sem .env
-bun run test:integration # PostgreSQL descartável via Docker
-bun run lint
-bun run lint:fix
-bun run format
-bun run typecheck
+```sh
+bun run crawl                                              # ano atual
+bun run crawl -- --year 2020-2024 --month 1,6,12            # período
+bun run crawl -- --brand 59 --model 5940 --reference 328    # recorte específico
 ```
 
-Os testes de integração criam e removem seu próprio contêiner, sem usar `DATABASE_URL`. `TEST_DATABASE_URL` pode apontar para um banco descartável cujo nome termine em `_test`; seus dados serão apagados pelos testes. `bun run db:push` fica disponível para protótipos em bancos descartáveis, mas não substitui migrations em bancos mantidos.
+`--year` e `--month` aceitam listas e intervalos; `--brand` e `--model`, listas por vírgula.
+`--model` exige `--brand`. `--reference` não pode ser combinado com ano ou mês.
 
-Arquivos usam kebab-case, funções usam camelCase, tipos usam PascalCase e testes ficam próximos ao código como `*.test.ts`. [Arquitetura e organização](docs/architecture.md) descreve as responsabilidades de cada pasta.
+A coleta retoma o progresso salvo. `--force` reinicia apenas os checkpoints do escopo selecionado e refaz a coleta.
+Retome falhas sem `--force`. `status --reference 328` mostra cobertura e pendências; uma coleta
+limitada a marcas ou modelos não comprova cobertura completa.
 
-## Docker
+### Publicar novos meses
 
-Para executar o pipeline junto ao PostgreSQL local:
-
-```bash
-docker compose --profile pipeline up -d --build --wait
-docker compose exec pipeline bun src/db/migrate.ts
-docker compose exec pipeline bun src/index.ts crawl --brand 59 --year 2024 --month 6
-docker compose exec pipeline bun src/index.ts status
+```sh
+bun src/index.ts refresh
+bun src/index.ts refresh --backup   # também faz backup; exige configuração R2
 ```
 
-O serviço `pipeline` usa `postgres:5432` dentro da rede do Compose. O Bun no host usa `localhost:5433`. A imagem mantém um processo ocioso para permitir comandos via `exec` e agendamento externo.
+`crawl` salva dados, mas não publica um novo mês. O site lê `latest_prices`, que só usa referências
+com `published_at` preenchido.
 
-Para um banco externo acessível pelo contêiner, também é possível usar `docker build -t fipe-crawler .` e `docker run -d --name fipe --env-file .env fipe-crawler`. Ajuste `DATABASE_URL`: `localhost` dentro do contêiner se refere ao próprio contêiner. A imagem padrão usa cliente PostgreSQL 17; selecione outro major com `--build-arg POSTGRES_MAJOR=16` conforme o servidor. Compose já seleciona cliente 16.
+`refresh` processa os novos meses em ordem. Publica quando não há checkpoints pendentes e a
+contagem de preços chega a 90% do mês publicado anterior. O primeiro mês não tem esse mínimo.
+Isso não garante que todos os veículos foram coletados.
 
-## Configuração e operação
+Falhas na coleta ou validação retornam código 1 sem publicar o mês. A próxima execução retoma
+o trabalho, incluindo a view e backups pendentes (`--backup`). Outro refresh ativo causa uma saída
+com código 0. Cada coleta do refresh também usa a trava de crawl, que rejeita coletas sobrepostas.
 
-A referência de variáveis está em [`.env.example`](.env.example). `ANTHROPIC_API_KEY` é opcional; exigido apenas na classificação de segmentos. `FIPE_PROXY` configura um proxy opcional. Backup usa `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT` e `R2_BUCKET`.
+### Atualizações recorrentes
 
-A aplicação consumidora é responsável pela view materializada `latest_prices`. O pipeline funciona sem ela; `REFRESH_LATEST_PRICES=true` habilita seu refresh ao final da coleta e exige que a view e seu índice único já existam. Falhas no refresh são reportadas e podem ser tentadas novamente ao retomar a coleta.
+Use cron ou o agendador do seu ambiente para executar `bun src/index.ts refresh` na raiz do projeto,
+com as variáveis de ambiente configuradas. Adicione `--backup` se usar R2/S3.
 
-Veja [operações](docs/operations.md) para banco existente, backup, retenção e restauração.
+A coleta pode levar horas. Configure o tempo limite do job para permitir sua conclusão e acompanhe
+os logs. Execuções sobrepostas de `refresh` são ignoradas enquanto outra estiver ativa.
 
-## Dados e schema
+Para monitorar o job, configure `HC_REFRESH_URL`: ele envia `/start` ao começar, a URL base no
+sucesso e `/fail` na falha. Uma execução ignorada não envia ping. Falhas no monitoramento não
+interrompem a coleta. Ajuste a tolerância do alerta para coletas longas (pelo menos 36 horas).
+
+### Backup e restauração
+
+O backup mantém 14 dumps diários e 12 mensais, em `daily/` e `monthly/`. O restore drill cria
+um banco temporário com nome único, restaura o dump, verifica se há preços e remove o banco.
+Falhas na limpeza são reportadas.
+
+## Configuração
+
+Defina as variáveis no `.env`. Só `DATABASE_URL` é obrigatória para a coleta.
+
+| Variável                                                               | Uso                                                                                   |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                                                         | Conexão PostgreSQL.                                                                   |
+| `RATE_LIMIT_MS`, `MAX_THROTTLE_MS`, `MAX_RETRIES`                      | Intervalo inicial, limite após throttling e tentativas. Padrões: `800`, `5000` e `3`. |
+| `FIPE_PROXY`                                                           | URL de proxy opcional para a FIPE. Omita se não usar.                                 |
+| `HC_REFRESH_URL`                                                       | URL opcional do Healthchecks para o refresh.                                          |
+| `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT`, `R2_BUCKET` | Configure todas para backup e restore drill em storage compatível com S3.             |
+
+## Schema
 
 ```mermaid
 flowchart LR
@@ -120,8 +142,36 @@ flowchart LR
     brands --> models --> model_years --> prices
 ```
 
-O [schema TypeScript](src/db/schema.ts) define as tabelas; [`drizzle/`](drizzle/) contém as migrations. Além das cinco tabelas de dados, `reference_brands`, `reference_models` e `reference_model_years` registram o progresso por referência.
+Tabelas em [`src/db/schema.ts`](src/db/schema.ts); migrations versionadas em [`drizzle/`](drizzle/).
+Use `bun run db:generate -- --name descricao` para gerar uma migration e revise o SQL.
 
-A fonte é [veiculos.fipe.org.br](https://veiculos.fipe.org.br), com atualização mensal. A FIPE cobre carros, motos e caminhões; este pipeline consulta apenas a categoria 1. Ano da referência é o período do preço; ano-modelo identifica o veículo e pode ser `32000` para zero-quilômetro.
+Veja [arquitetura](docs/architecture.md) para estrutura de pastas e convenções de nomes,
+e [operações](docs/operations.md) para migrations, Docker, retomada e backup.
+
+Os hooks do Vite+ são instalados por `bun install`. `bun run check` é a verificação compartilhada
+com a CI: formatação, lint, tipos e testes com PostgreSQL descartável. Testes unitários ficam
+próximos ao código; cenários com banco real ficam em `tests/integration/`.
+
+`bun run classify -- --dry-run` mostra modelos sem segmento sem exigir chave de IA.
+`classify` e `crawl --classify` exigem `ANTHROPIC_API_KEY`.
 
 Licença [MIT](LICENSE).
+
+## Fonte de Dados
+
+Estes dados são **públicos e oficiais**, disponibilizados pela Fundação Instituto de Pesquisas Econômicas (FIPE).
+
+|                       |                                                                        |
+| --------------------- | ---------------------------------------------------------------------- |
+| **Fonte**             | [veiculos.fipe.org.br](https://veiculos.fipe.org.br)                   |
+| **Atualização**       | Mensal (desde 2001)                                                    |
+| **Cobertura da FIPE** | Carros, motos, caminhões e utilitários                                 |
+| **Uso**               | Referência para seguros, financiamentos, IPVA e negociação de veículos |
+
+Este pipeline coleta apenas carros (tipo 1 da FIPE).
+
+A Tabela FIPE é a referência de preço médio de veículos mais utilizada no Brasil. Os dados são coletados mensalmente junto a concessionárias, revendedoras e fabricantes em todo o país.
+
+## Contribuidores
+
+<a href="https://github.com/caiopizzol"><img src="https://github.com/caiopizzol.png" width="50" height="50" alt="caiopizzol" title="Caio Pizzol" /></a>

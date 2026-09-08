@@ -1,18 +1,18 @@
-import { createClassifier } from '../classifier/classify.js';
-import type { Repository } from '../db/repository.js';
+import { createClassifier } from "../classifier/classify.js";
+import type { Repository } from "../db/repository.js";
 
 export async function classify(repo: Repository, dryRun: boolean, apiKey: string) {
   const modelsToClassify = await repo.getModelsWithoutSegment();
 
   if (modelsToClassify.length === 0) {
-    console.log('All models are already classified.');
+    console.log("All models are already classified.");
     return;
   }
 
   console.log(`Found ${modelsToClassify.length} models without segment.`);
 
   if (dryRun) {
-    console.log('\nDry run - would classify:');
+    console.log("\nDry run - would classify:");
     for (const model of modelsToClassify.slice(0, 20)) {
       console.log(`  - ${model.brandName} ${model.modelName}`);
     }
@@ -22,7 +22,7 @@ export async function classify(repo: Repository, dryRun: boolean, apiKey: string
     return;
   }
 
-  console.log('\nClassifying models...');
+  console.log("\nClassifying models...");
   const results = await createClassifier(apiKey).classifyModels(modelsToClassify);
 
   let classified = 0;
@@ -30,7 +30,7 @@ export async function classify(repo: Repository, dryRun: boolean, apiKey: string
 
   for (const result of results) {
     if (result.segment) {
-      await repo.updateModelSegment(result.id, result.segment, 'ai');
+      await repo.updateModelSegment(result.id, result.segment, "ai");
       classified++;
     } else {
       failed++;

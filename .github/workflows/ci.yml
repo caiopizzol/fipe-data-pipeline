@@ -18,7 +18,7 @@ jobs:
           bun-version-file: package.json
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        run: bunx --package vite-plus@0.2.7 vp install --frozen-lockfile
 
       - name: Check
         run: bun run check

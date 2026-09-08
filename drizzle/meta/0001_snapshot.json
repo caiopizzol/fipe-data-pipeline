@@ -1,5 +1,5 @@
 {
-  "id": "a26a3b9f-0e88-492b-8923-ab9c77150553",
+  "id": "af07ae4e-0bde-4695-91e2-ab20737d120e",
   "prevId": "02654380-762e-4dfe-872b-d70117b111c2",
   "version": "7",
   "dialect": "postgresql",
@@ -39,9 +39,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {},
@@ -49,10 +49,8 @@
       "uniqueConstraints": {
         "brands_fipe_code_unique": {
           "name": "brands_fipe_code_unique",
-          "columns": [
-            "fipe_code"
-          ],
-          "nullsNotDistinct": false
+          "nullsNotDistinct": false,
+          "columns": ["fipe_code"]
         }
       },
       "policies": {},
@@ -106,9 +104,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "idx_model_years_year": {
           "name": "idx_model_years_year",
@@ -121,36 +119,28 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "model_years_model_id_models_id_fk": {
           "name": "model_years_model_id_models_id_fk",
           "tableFrom": "model_years",
-          "columnsFrom": [
-            "model_id"
-          ],
           "tableTo": "models",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "columnsFrom": ["model_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "model_years_model_id_year_fuel_code_unique": {
           "name": "model_years_model_id_year_fuel_code_unique",
-          "columns": [
-            "model_id",
-            "year",
-            "fuel_code"
-          ],
-          "nullsNotDistinct": false
+          "nullsNotDistinct": false,
+          "columns": ["model_id", "year", "fuel_code"]
         }
       },
       "policies": {},
@@ -210,9 +200,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "idx_models_segment": {
           "name": "idx_models_segment",
@@ -225,35 +215,28 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "models_brand_id_brands_id_fk": {
           "name": "models_brand_id_brands_id_fk",
           "tableFrom": "models",
-          "columnsFrom": [
-            "brand_id"
-          ],
           "tableTo": "brands",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "columnsFrom": ["brand_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "models_brand_id_fipe_code_unique": {
           "name": "models_brand_id_fipe_code_unique",
-          "columns": [
-            "brand_id",
-            "fipe_code"
-          ],
-          "nullsNotDistinct": false
+          "nullsNotDistinct": false,
+          "columns": ["brand_id", "fipe_code"]
         }
       },
       "policies": {},
@@ -314,9 +297,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "idx_prices_fipe_code": {
           "name": "idx_prices_fipe_code",
@@ -329,9 +312,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "idx_prices_model_year_id": {
           "name": "idx_prices_model_year_id",
@@ -344,48 +327,37 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "prices_model_year_id_model_years_id_fk": {
           "name": "prices_model_year_id_model_years_id_fk",
           "tableFrom": "prices",
-          "columnsFrom": [
-            "model_year_id"
-          ],
           "tableTo": "model_years",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "columnsFrom": ["model_year_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
         "prices_reference_table_id_reference_tables_id_fk": {
           "name": "prices_reference_table_id_reference_tables_id_fk",
           "tableFrom": "prices",
-          "columnsFrom": [
-            "reference_table_id"
-          ],
           "tableTo": "reference_tables",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "columnsFrom": ["reference_table_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "prices_model_year_id_reference_table_id_unique": {
           "name": "prices_model_year_id_reference_table_id_unique",
-          "columns": [
-            "model_year_id",
-            "reference_table_id"
-          ],
-          "nullsNotDistinct": false
+          "nullsNotDistinct": false,
+          "columns": ["model_year_id", "reference_table_id"]
         }
       },
       "policies": {},
@@ -433,9 +405,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "idx_reference_brands_brand": {
           "name": "idx_reference_brands_brand",
@@ -448,48 +420,37 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "reference_brands_reference_table_id_reference_tables_id_fk": {
           "name": "reference_brands_reference_table_id_reference_tables_id_fk",
           "tableFrom": "reference_brands",
-          "columnsFrom": [
-            "reference_table_id"
-          ],
           "tableTo": "reference_tables",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "columnsFrom": ["reference_table_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
         "reference_brands_brand_id_brands_id_fk": {
           "name": "reference_brands_brand_id_brands_id_fk",
           "tableFrom": "reference_brands",
-          "columnsFrom": [
-            "brand_id"
-          ],
           "tableTo": "brands",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "columnsFrom": ["brand_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "reference_brands_reference_table_id_brand_id_unique": {
           "name": "reference_brands_reference_table_id_brand_id_unique",
-          "columns": [
-            "reference_table_id",
-            "brand_id"
-          ],
-          "nullsNotDistinct": false
+          "nullsNotDistinct": false,
+          "columns": ["reference_table_id", "brand_id"]
         }
       },
       "policies": {},
@@ -537,9 +498,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "idx_reference_model_years_my": {
           "name": "idx_reference_model_years_my",
@@ -552,48 +513,37 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "reference_model_years_reference_table_id_reference_tables_id_fk": {
           "name": "reference_model_years_reference_table_id_reference_tables_id_fk",
           "tableFrom": "reference_model_years",
-          "columnsFrom": [
-            "reference_table_id"
-          ],
           "tableTo": "reference_tables",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "columnsFrom": ["reference_table_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
         "reference_model_years_model_year_id_model_years_id_fk": {
           "name": "reference_model_years_model_year_id_model_years_id_fk",
           "tableFrom": "reference_model_years",
-          "columnsFrom": [
-            "model_year_id"
-          ],
           "tableTo": "model_years",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "columnsFrom": ["model_year_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "reference_model_years_reference_table_id_model_year_id_unique": {
           "name": "reference_model_years_reference_table_id_model_year_id_unique",
-          "columns": [
-            "reference_table_id",
-            "model_year_id"
-          ],
-          "nullsNotDistinct": false
+          "nullsNotDistinct": false,
+          "columns": ["reference_table_id", "model_year_id"]
         }
       },
       "policies": {},
@@ -641,9 +591,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         },
         "idx_reference_models_model": {
           "name": "idx_reference_models_model",
@@ -656,48 +606,37 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {
         "reference_models_reference_table_id_reference_tables_id_fk": {
           "name": "reference_models_reference_table_id_reference_tables_id_fk",
           "tableFrom": "reference_models",
-          "columnsFrom": [
-            "reference_table_id"
-          ],
           "tableTo": "reference_tables",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "columnsFrom": ["reference_table_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
         "reference_models_model_id_models_id_fk": {
           "name": "reference_models_model_id_models_id_fk",
           "tableFrom": "reference_models",
-          "columnsFrom": [
-            "model_id"
-          ],
           "tableTo": "models",
-          "columnsTo": [
-            "id"
-          ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "columnsFrom": ["model_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "reference_models_reference_table_id_model_id_unique": {
           "name": "reference_models_reference_table_id_model_id_unique",
-          "columns": [
-            "reference_table_id",
-            "model_id"
-          ],
-          "nullsNotDistinct": false
+          "nullsNotDistinct": false,
+          "columns": ["reference_table_id", "model_id"]
         }
       },
       "policies": {},
@@ -737,6 +676,24 @@
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
+        },
+        "published_at": {
+          "name": "published_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "latest_prices_refreshed_at": {
+          "name": "latest_prices_refreshed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "backup_completed_at": {
+          "name": "backup_completed_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -757,9 +714,9 @@
             }
           ],
           "isUnique": false,
-          "with": {},
+          "concurrently": false,
           "method": "btree",
-          "concurrently": false
+          "with": {}
         }
       },
       "foreignKeys": {},
@@ -767,10 +724,8 @@
       "uniqueConstraints": {
         "reference_tables_code_unique": {
           "name": "reference_tables_code_unique",
-          "columns": [
-            "code"
-          ],
-          "nullsNotDistinct": false
+          "nullsNotDistinct": false,
+          "columns": ["code"]
         }
       },
       "policies": {},
@@ -780,10 +735,10 @@
   },
   "enums": {},
   "schemas": {},
-  "views": {},
   "sequences": {},
   "roles": {},
   "policies": {},
+  "views": {},
   "_meta": {
     "columns": {},
     "schemas": {},

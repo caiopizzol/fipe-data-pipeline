@@ -2,18 +2,18 @@
 
 Este repositório é uma aplicação CLI em um único pacote Bun. A fonte de dados é a API pública da FIPE e a persistência usa PostgreSQL via Drizzle.
 
-| Local | Responsabilidade |
-|---|---|
-| `src/index.ts` | Registrar comandos, carregar configurações, abrir/fechar recursos e definir o código de saída |
-| `src/cli-options.ts` | Validar argumentos antes de qualquer operação |
-| `src/config.ts` | Validar apenas as variáveis necessárias ao comando |
-| `src/commands/` | Orquestrar crawl, status, classificação e backup/restauração |
-| `src/fipe/` | Cliente HTTP, schemas das respostas e conversão de valores |
-| `src/classifier/` | Vocabulário de segmentos e comunicação com o provedor de IA |
-| `src/db/` | Conexão, schema e consultas; a conexão é passada ao repositório |
-| `drizzle/` | Histórico versionado do schema e das mudanças de dados |
-| `tests/integration/` | Cenários de coleta com PostgreSQL real e FIPE simulada |
-| `fixtures/pickled/` | Avaliações de compreensão da documentação por agentes |
+| Local                | Responsabilidade                                                                              |
+| -------------------- | --------------------------------------------------------------------------------------------- |
+| `src/index.ts`       | Registrar comandos, carregar configurações, abrir/fechar recursos e definir o código de saída |
+| `src/cli-options.ts` | Validar argumentos antes de qualquer operação                                                 |
+| `src/config.ts`      | Validar apenas as variáveis necessárias ao comando                                            |
+| `src/commands/`      | Orquestrar crawl, refresh, status, classificação e backup/restauração                         |
+| `src/fipe/`          | Cliente HTTP, schemas das respostas e conversão de valores                                    |
+| `src/classifier/`    | Vocabulário de segmentos e comunicação com o provedor de IA                                   |
+| `src/db/`            | Conexão, schema e consultas; a conexão é passada ao repositório                               |
+| `drizzle/`           | Histórico versionado do schema e das mudanças de dados                                        |
+| `tests/integration/` | Cenários de coleta com PostgreSQL real e FIPE simulada                                        |
+| `fixtures/pickled/`  | Avaliações de compreensão da documentação por agentes                                         |
 
 ## Fluxo de coleta
 
@@ -35,7 +35,12 @@ O repositório concentra SQL explícito. Funções `getOrCreate...` preservam re
 
 ## Banco consumidor
 
-O pipeline possui as oito tabelas declaradas em `src/db/schema.ts`. A aplicação consumidora possui suas views e índices derivados. `latest_prices` é uma dessas views: seu refresh é uma integração opcional, habilitada por `REFRESH_LATEST_PRICES=true`. A configuração é validada por comando e a conexão só é criada quando necessária.
+O pipeline possui as oito tabelas declaradas em `src/db/schema.ts` e a view materializada `latest_prices`.
+As migrations criam a view com filtro por `published_at`. `crawl` salva dados sem publicar; `refresh`
+publica referências em ordem após validar pendências e o mínimo de preços, atualiza a view e retoma
+backups pendentes. A trava exclusiva de refresh preserva o protocolo anterior; cada coleta interna
+usa também a trava de crawl. `REFRESH_LATEST_PRICES=true` permite atualizar a view ao fim de um
+crawl independente, mantendo o filtro de publicação.
 
 ## Convenções
 

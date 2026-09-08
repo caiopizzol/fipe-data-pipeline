@@ -1,4 +1,4 @@
-import type { CrawlerConfig } from '../config.js';
+import type { CrawlerConfig } from "../config.js";
 import {
   brandsSchema,
   fipeErrorSchema,
@@ -6,10 +6,10 @@ import {
   priceSchema,
   referenceTablesSchema,
   yearsSchema,
-} from './schemas.js';
-import type { Brand, ModelsResponse, Price, ReferenceTable, Year } from './schemas.js';
+} from "./schemas.js";
+import type { Brand, ModelsResponse, Price, ReferenceTable, Year } from "./schemas.js";
 
-const BASE_URL = 'https://veiculos.fipe.org.br/api/veiculos';
+const BASE_URL = "https://veiculos.fipe.org.br/api/veiculos";
 const VEHICLE_TYPE_CAR = 1;
 
 async function sleep(ms: number): Promise<void> {
@@ -82,16 +82,16 @@ export class FipeClient {
     attempt = 0,
   ): Promise<unknown> {
     if (Date.now() < this.retryNotBefore)
-      throw new Error('FIPE requested a long cooldown; retry this crawl later');
+      throw new Error("FIPE requested a long cooldown; retry this crawl later");
     await this.throttle();
 
     let response: Response;
     try {
       response = await this.fetcher(`${BASE_URL}/${endpoint}`, {
-        method: 'POST',
+        method: "POST",
         signal: AbortSignal.timeout(30_000),
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
         ...(this.config.FIPE_PROXY ? { proxy: this.config.FIPE_PROXY } : {}),
@@ -100,7 +100,7 @@ export class FipeClient {
       if (retries > 0) {
         const waitTime = this.calculateBackoff(attempt);
         console.log(
-          `Network error (${error instanceof Error ? error.message : error}), waiting ${waitTime}ms before retry (${retries} retries left)`,
+          `Network error (${error instanceof Error ? error.message : String(error)}), waiting ${waitTime}ms before retry (${retries} retries left)`,
         );
         await this.wait(waitTime);
         return this.request(endpoint, body, retries - 1, attempt + 1);
@@ -113,7 +113,7 @@ export class FipeClient {
         this.increaseThrottle();
 
         // Check for Retry-After header
-        const retryAfter = response.headers.get('Retry-After');
+        const retryAfter = response.headers.get("Retry-After");
         const seconds = retryAfter && /^\d+$/.test(retryAfter) ? Number(retryAfter) : undefined;
         const date = retryAfter ? Date.parse(retryAfter) : Number.NaN;
         const waitTime =
@@ -125,7 +125,7 @@ export class FipeClient {
         if (waitTime > 60_000) {
           this.retryNotBefore = Date.now() + waitTime;
           throw new Error(
-            'FIPE requested a cooldown longer than 60 seconds; retry this crawl later',
+            "FIPE requested a cooldown longer than 60 seconds; retry this crawl later",
           );
         }
 
@@ -162,12 +162,12 @@ export class FipeClient {
   }
 
   async getReferenceTables(): Promise<ReferenceTable[]> {
-    const data = await this.request('ConsultarTabelaDeReferencia', {});
+    const data = await this.request("ConsultarTabelaDeReferencia", {});
     return referenceTablesSchema.parse(data);
   }
 
   async getBrands(referenceCode: number): Promise<Brand[]> {
-    const data = await this.request('ConsultarMarcas', {
+    const data = await this.request("ConsultarMarcas", {
       codigoTipoVeiculo: VEHICLE_TYPE_CAR,
       codigoTabelaReferencia: referenceCode,
     });
@@ -175,7 +175,7 @@ export class FipeClient {
   }
 
   async getModels(referenceCode: number, brandCode: string): Promise<ModelsResponse> {
-    const data = await this.request('ConsultarModelos', {
+    const data = await this.request("ConsultarModelos", {
       codigoTipoVeiculo: VEHICLE_TYPE_CAR,
       codigoTabelaReferencia: referenceCode,
       codigoMarca: brandCode,
@@ -184,7 +184,7 @@ export class FipeClient {
   }
 
   async getYears(referenceCode: number, brandCode: string, modelCode: string): Promise<Year[]> {
-    const data = await this.request('ConsultarAnoModelo', {
+    const data = await this.request("ConsultarAnoModelo", {
       codigoTipoVeiculo: VEHICLE_TYPE_CAR,
       codigoTabelaReferencia: referenceCode,
       codigoMarca: brandCode,
@@ -194,14 +194,14 @@ export class FipeClient {
   }
 
   async getPrice(params: PriceParams): Promise<Price> {
-    const data = await this.request('ConsultarValorComTodosParametros', {
+    const data = await this.request("ConsultarValorComTodosParametros", {
       codigoTipoVeiculo: VEHICLE_TYPE_CAR,
       codigoTabelaReferencia: params.referenceCode,
       codigoMarca: params.brandCode,
       codigoModelo: params.modelCode,
       anoModelo: params.year,
       codigoTipoCombustivel: params.fuelCode,
-      tipoConsulta: 'tradicional',
+      tipoConsulta: "tradicional",
     });
     return priceSchema.parse(data);
   }
@@ -216,5 +216,5 @@ export interface PriceParams {
 }
 export type FipeApi = Pick<
   FipeClient,
-  'getReferenceTables' | 'getBrands' | 'getModels' | 'getYears' | 'getPrice'
+  "getReferenceTables" | "getBrands" | "getModels" | "getYears" | "getPrice"
 >;

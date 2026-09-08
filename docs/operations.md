@@ -2,15 +2,17 @@
 
 ## Banco e migrations
 
-`bun run db:migrate` aplica as migrations de `drizzle/` usando `DATABASE_URL`. Execute antes da primeira coleta e após atualizar a aplicação. `bun run db:generate -- --name descricao` gera SQL a partir de alterações em `src/db/schema.ts`; revise esse SQL e teste em um banco descartável. `db:push` é destinado a protótipos descartáveis.
+`bun run db:migrate` aplica as migrations de `drizzle/` usando `DATABASE_URL`. Execute antes da primeira coleta e após atualizar a aplicação. `bun run db:generate -- --name descricao` gera SQL a partir de alterações em `src/db/schema.ts`; revise esse SQL e teste em um banco descartável.
 
 ### Banco existente
 
 A migration inicial aceita o layout anterior de oito tabelas e adiciona índices ausentes sem recriar tabelas existentes. Antes da primeira adoção, faça backup e compare o schema do banco com `src/db/schema.ts`; `CREATE TABLE IF NOT EXISTS` não corrige divergências em colunas ou constraints. Para bancos criados pelo antigo `initial.sql`, os nomes automáticos das constraints podem diferir: revise migrations futuras que renomeiem/removam constraints.
 
-A segunda migration limpa somente `reference_tables.crawled_at`, porque versões anteriores marcavam referências parciais como completas. Preços, modelos e checkpoints individuais são preservados. Reexecute uma coleta sem filtros de marca/modelo para comprovar cobertura completa. Migrations posteriores são registradas em `drizzle.__drizzle_migrations`; uma nova execução não reaplica as já registradas.
+A migration de publicação adota bancos antigos usando a regra histórica de preços e checkpoints completos, cria `latest_prices` filtrada por `published_at` e preserva os grants conhecidos. Bancos que já têm `published_at` mantêm a view e os marcadores de refresh/backup, inclusive pendências.
 
-A migração deve acontecer sem uma coleta em execução. Este procedimento não administra tabelas ou views exclusivas da aplicação consumidora.
+A terceira migration limpa somente `reference_tables.crawled_at`, porque versões anteriores marcavam referências parciais como completas. Preços, modelos e checkpoints individuais são preservados. Reexecute uma coleta sem filtros de marca/modelo para comprovar cobertura completa. Migrations posteriores são registradas em `drizzle.__drizzle_migrations`; uma nova execução não reaplica as já registradas.
+
+A migração deve acontecer sem uma coleta em execução. Interrompa também o refresh durante migrations. O usuário de migração precisa poder criar tabelas, índices e a view; no PostgreSQL anterior a 17, o usuário de refresh deve possuir a view ou pertencer à role proprietária.
 
 ## Retomada e monitoramento
 
@@ -18,7 +20,7 @@ A migração deve acontecer sem uma coleta em execução. Este procedimento não
 
 `--force` reinicia apenas os checkpoints selecionados e atualiza preços já existentes. Não execute `--force` repetidamente para retomar uma falha: isso reiniciaria também os itens que já foram recuperados.
 
-Quando `REFRESH_LATEST_PRICES=true`, a aplicação consumidora precisa ter criado e populado `latest_prices` e seu índice único compatível com `REFRESH MATERIALIZED VIEW CONCURRENTLY`. O padrão é `false`. A retomada também tenta o refresh, mesmo que não tenha sido necessário buscar preços novamente.
+As migrations criam `latest_prices` e seu índice único. `refresh` publica novos meses e retoma atualizações da view e backups pendentes. `REFRESH_LATEST_PRICES=true` também atualiza a view ao fim de um crawl independente, sem publicar referências. O padrão é `false`. A retomada também tenta o refresh, mesmo que não tenha sido necessário buscar preços novamente.
 
 ## Backup e restauração
 
@@ -43,6 +45,6 @@ O host usa `localhost:5433`; o serviço pipeline do Compose usa `postgres:5432`.
 
 ## Verificação local
 
-`bun run check` executa lint, tipos, testes unitários e testes de integração. Por padrão os testes de integração criam um PostgreSQL 16 descartável e removem o contêiner ao terminar. Nunca usam `DATABASE_URL`. `TEST_DATABASE_URL` é apenas para um banco de testes descartável com sufixo `_test`.
+`bun run check` executa lint, tipos, testes unitários e testes de integração. Por padrão os testes de integração criam PostgreSQL 16 e 17 descartáveis e removem os contêineres ao terminar. Nunca usam `DATABASE_URL`. `TEST_DATABASE_URL` é apenas para um banco de testes descartável com sufixo `_test`.
 
-`bun run docs:check` valida exemplos e planos de execução do Pickled sem consumir API de agentes. As avaliações com agentes reais ficam no workflow manual Pickled. `bun run hooks:install` instala Lefthook no clone atual; a CI continua sendo a verificação compartilhada.
+Os hooks do Vite+ são instalados por `bun install`; a CI executa a mesma verificação `bun run check`.

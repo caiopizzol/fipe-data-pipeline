@@ -3,8 +3,6 @@ node_modules
 .env
 .env.*
 .codex
-.pickled
 docs
-fixtures
 tests
 *.log

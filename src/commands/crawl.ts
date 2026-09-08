@@ -1,7 +1,7 @@
-import type { Segment } from '../classifier/segments.js';
-import type { CrawlScope, Repository } from '../db/repository.js';
-import type { FipeApi } from '../fipe/client.js';
-import { parsePrice, parseReferenceMonth, parseYearValue } from '../fipe/parsers.js';
+import type { Segment } from "../classifier/segments.js";
+import type { CrawlScope, Repository } from "../db/repository.js";
+import type { FipeApi } from "../fipe/client.js";
+import { parsePrice, parseReferenceMonth, parseYearValue } from "../fipe/parsers.js";
 
 export interface CrawlOptions extends CrawlScope {
   referenceCode?: number;
@@ -29,14 +29,14 @@ export async function crawl(
     result.failed++;
     log(`${context}: ${error instanceof Error ? error.message : String(error)}`);
   };
-  log('Fetching reference tables...');
+  log("Fetching reference tables...");
   const years = options.years ?? [new Date().getFullYear()];
   const refs = (await api.getReferenceTables()).filter((ref) => {
     if (options.referenceCode !== undefined) return ref.Codigo === options.referenceCode;
     const { year, month } = parseReferenceMonth(ref.Mes);
     return years.includes(year) && (!options.months || options.months.includes(month));
   });
-  if (!refs.length) throw new Error('No reference tables match the requested scope');
+  if (!refs.length) throw new Error("No reference tables match the requested scope");
 
   for (const ref of refs) {
     try {
@@ -49,9 +49,9 @@ export async function crawl(
       const brands = (await api.getBrands(ref.Codigo)).filter(
         (brand) => !options.brandCodes || options.brandCodes.includes(brand.Value),
       );
-      if (!brands.length) throw new Error('No brands match the requested scope');
+      if (!brands.length) throw new Error("No brands match the requested scope");
       if (options.brandCodes?.some((code) => !brands.some((brand) => brand.Value === code))) {
-        throw new Error('One or more requested brands are absent from this reference');
+        throw new Error("One or more requested brands are absent from this reference");
       }
       for (const brand of brands) {
         const stored = await repo.getOrCreateBrand(brand.Value, brand.Label);
@@ -76,7 +76,7 @@ export async function crawl(
             if (isNew && classifyModel) {
               try {
                 const segment = await classifyModel(brand.name, model.Label);
-                await repo.updateModelSegment(stored.id, segment, 'ai');
+                await repo.updateModelSegment(stored.id, segment, "ai");
               } catch (error) {
                 fail(`Classification for ${model.Label} (retry with classify)`, error);
               }
@@ -88,7 +88,7 @@ export async function crawl(
         }
       }
       if (options.modelCodes?.some((code) => !foundModels.has(code))) {
-        fail(`Reference ${ref.Codigo}`, 'One or more requested models were not discovered');
+        fail(`Reference ${ref.Codigo}`, "One or more requested models were not discovered");
       }
       const pendingModels = await repo.getUncrawledReferenceModels(record.id, options);
       log(`  Fetching years for ${pendingModels.length} models`);
@@ -139,12 +139,12 @@ export async function crawl(
         if (processed % 100 === 0) log(`  Prices processed: ${processed}/${pendingYears.length}`);
       }
       const progress = await repo.getReferenceCrawlProgress(ref.Codigo);
-      if (!progress) throw new Error('Reference disappeared while crawling');
+      if (!progress) throw new Error("Reference disappeared while crawling");
       const pending =
         progress.brands.pending + progress.models.pending + progress.modelYears.pending;
       if (fullReference && pending === 0) await repo.markReferenceCrawled(ref.Codigo, true);
       log(
-        `  Reference ${ref.Codigo}: ${fullReference && pending === 0 ? 'complete' : 'scoped or incomplete'} (${pending} pending across reference)`,
+        `  Reference ${ref.Codigo}: ${fullReference && pending === 0 ? "complete" : "scoped or incomplete"} (${pending} pending across reference)`,
       );
       result.references++;
     } catch (error) {
