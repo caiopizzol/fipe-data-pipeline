@@ -19,5 +19,6 @@ jobs:
   test-integrity:
     name: Test integrity
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: caiopizzol/skills/.github/actions/test-integrity@d8185b941f065c5ab2b1dbcf46dc300af736ecb5
+      - uses: caiopizzol/skills/.github/actions/test-integrity@5f82500d62691626f1a2e3a01733d29cbe66f14c
